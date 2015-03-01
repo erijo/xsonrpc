@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -eu	
+
+files="LICENSE_1_0.txt single_include/catch.hpp"
+baseurl="https://raw.github.com/philsquared/Catch/master/"
+
+for file in $files; do
+    echo "Fetching $file"
+    curl -L -o "$(dirname "$0")/$(basename $file)" "$baseurl/$file"
+done

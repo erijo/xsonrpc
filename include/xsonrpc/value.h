@@ -1,0 +1,188 @@
+// This file is part of xsonrpc, an XML/JSON RPC library.
+// Copyright (C) 2015 Erik Johansson <erik@ejohansson.se
+//
+// This library is free software; you can redistribute it and/or modify it
+// under the terms of the GNU Lesser General Public License as published by the
+// Free Software Foundation; either version 2.1 of the License, or (at your
+// option) any later version.
+//
+// This library is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License
+// for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this library; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+#ifndef XSONRPC_VALUE_H
+#define XSONRPC_VALUE_H
+
+#include <cstdint>
+#include <map>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+namespace tinyxml2 {
+class XMLElement;
+class XMLPrinter;
+}
+
+namespace xsonrpc {
+
+class Value
+{
+public:
+  typedef std::vector<Value> Array;
+  typedef std::string String;
+  typedef std::map<std::string, Value> Struct;
+
+  enum class Type
+  {
+    ARRAY,
+    BASE_64,
+    BOOLEAN,
+    DATE_TIME,
+    DOUBLE,
+    INTEGER_32,
+    INTEGER_64,
+    NIL,
+    STRING,
+    STRUCT
+  };
+
+  explicit Value(const tinyxml2::XMLElement* element);
+
+  Value() : myType(Type::NIL) {}
+  Value(Array value);
+  Value(bool value) : myType(Type::BOOLEAN) { as.myBoolean = value; }
+  Value(double value) : myType(Type::DOUBLE) { as.myDouble = value; }
+  Value(int32_t value) : myType(Type::INTEGER_32) { as.myInteger32 = value; }
+  Value(int64_t value) : myType(Type::INTEGER_64) { as.myInteger64 = value; }
+  Value(const char* value) : Value(String(value)) {}
+  Value(String value);
+  Value(Struct value);
+
+  template<typename T>
+  Value(const std::vector<T>& value)
+    : Value(Array{})
+  {
+    as.myArray->reserve(value.size());
+    for (auto& v : value) {
+      as.myArray->emplace_back(v);
+    }
+  }
+
+  template<typename T>
+  Value(const std::map<std::string, T>& value)
+    : Value(Struct{})
+  {
+    for (auto& v : value) {
+      as.myStruct->emplace(v.first, v.second);
+    }
+  }
+
+  template<typename T>
+  Value(const std::unordered_map<std::string, T>& value)
+    : Value(Struct{})
+  {
+    for (auto& v : value) {
+      as.myStruct->emplace(v.first, v.second);
+    }
+  }
+
+  ~Value();
+
+  explicit Value(const Value&);
+  Value& operator=(const Value&) = delete;
+  Value(Value&& other) noexcept;
+  Value& operator=(Value&& other) noexcept;
+
+  bool IsArray() const { return myType == Type::ARRAY; }
+  bool IsBase64() const { return myType == Type::BASE_64; }
+  bool IsBoolean() const { return myType == Type::BOOLEAN; }
+  bool IsDateTime() const { return myType == Type::DATE_TIME; }
+  bool IsDouble() const { return myType == Type::DOUBLE; }
+  bool IsInteger32() const { return myType == Type::INTEGER_32; }
+  bool IsInteger64() const { return myType == Type::INTEGER_64; }
+  bool IsNil() const { return myType == Type::NIL; }
+  bool IsString() const { return myType == Type::STRING; }
+  bool IsStruct() const { return myType == Type::STRUCT; }
+
+  const Array& AsArray() const;
+  const bool& AsBoolean() const;
+  const double& AsDouble() const;
+  const int32_t& AsInteger32() const;
+  const int64_t& AsInteger64() const;
+  const String& AsString() const;
+  const Struct& AsStruct() const;
+
+  template<typename T>
+  const T& AsType() const;
+
+  static std::string GetTypeName(Type type);
+
+  void Print(tinyxml2::XMLPrinter& printer) const;
+
+private:
+  void Reset();
+
+  Type myType;
+  union
+  {
+    Array* myArray;
+    bool myBoolean;
+    double myDouble;
+    int32_t myInteger32;
+    int64_t myInteger64;
+    String* myString;
+    Struct* myStruct;
+  } as;
+};
+
+template<> inline
+const Value::Array& Value::AsType<typename Value::Array>() const
+{
+  return AsArray();
+}
+
+template<> inline
+const bool& Value::AsType<bool>() const
+{
+  return AsBoolean();
+}
+
+template<> inline
+const double& Value::AsType<double>() const
+{
+  return AsDouble();
+}
+
+template<> inline
+const int32_t& Value::AsType<int32_t>() const
+{
+  return AsInteger32();
+}
+
+template<> inline
+const int64_t& Value::AsType<int64_t>() const
+{
+  return AsInteger64();
+}
+
+template<> inline
+const Value::String& Value::AsType<typename Value::String>() const
+{
+  return AsString();
+}
+
+template<> inline
+const Value::Struct& Value::AsType<typename Value::Struct>() const
+{
+  return AsStruct();
+}
+
+} // namespace xsonrpc
+
+#endif

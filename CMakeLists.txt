@@ -20,6 +20,7 @@ add_library(xsonrpc SHARED
   3pp/tinyxml2/tinyxml2.cpp
   src/fault.cpp
   src/request.cpp
+  src/response.cpp
   src/util.cpp
   src/value.cpp
 )
@@ -30,6 +31,7 @@ include_directories("3pp/catch")
 add_executable(unittest
   test/main.cpp
   test/requesttest.cpp
+  test/responsetest.cpp
   test/valuetest.cpp
 )
 target_link_libraries(unittest xsonrpc)

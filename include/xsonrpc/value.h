@@ -125,6 +125,9 @@ public:
 
   void Print(tinyxml2::XMLPrinter& printer) const;
 
+  inline const Value& operator[](Array::size_type i) const;
+  inline const Value& operator[](const Struct::key_type& key) const;
+
 private:
   void Reset();
 
@@ -181,6 +184,16 @@ template<> inline
 const Value::Struct& Value::AsType<typename Value::Struct>() const
 {
   return AsStruct();
+}
+
+inline const Value& Value::operator[](Array::size_type i) const
+{
+  return AsArray().at(i);
+};
+
+inline const Value& Value::operator[](const Struct::key_type& key) const
+{
+  return AsStruct().at(key);
 }
 
 } // namespace xsonrpc

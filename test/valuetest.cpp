@@ -78,6 +78,9 @@ TEST_CASE("nil")
   CHECK_THROWS_AS(value->AsString(), InvalidParametersFault);
   CHECK_THROWS_AS(value->AsStruct(), InvalidParametersFault);
 
+  CHECK_THROWS_AS((*value)[0], InvalidParametersFault);
+  CHECK_THROWS_AS((*value)["notthere"], InvalidParametersFault);
+
   CHECK(ToXml(*value) == "<value><nil/></value>");
 }
 
@@ -124,9 +127,15 @@ TEST_CASE("array")
   CHECK_THROWS_AS(value->AsString(), InvalidParametersFault);
   CHECK_THROWS_AS(value->AsStruct(), InvalidParametersFault);
 
+  CHECK_THROWS_AS((*value)["notthere"], InvalidParametersFault);
+
   REQUIRE(value->AsArray().size() == 2);
   CHECK(value->AsArray()[0].AsInteger32() == 1);
   CHECK_FALSE(value->AsArray()[1].AsBoolean());
+
+  CHECK((*value)[0].AsInteger32() == 1);
+  CHECK_FALSE((*value)[1].AsBoolean());
+  CHECK_THROWS_AS((*value)[2], std::out_of_range);
 
   CHECK(ToXml(*value) ==
         "<value>\n"
@@ -174,6 +183,9 @@ TEST_CASE("boolean")
   CHECK_THROWS_AS(value->AsString(), InvalidParametersFault);
   CHECK_THROWS_AS(value->AsStruct(), InvalidParametersFault);
 
+  CHECK_THROWS_AS((*value)[0], InvalidParametersFault);
+  CHECK_THROWS_AS((*value)["notthere"], InvalidParametersFault);
+
   CHECK(value->AsBoolean());
 
   CHECK(ToXml(*value) == "<value><boolean>1</boolean></value>");
@@ -213,6 +225,9 @@ TEST_CASE("double")
   CHECK_THROWS_AS(value->AsInteger64(), InvalidParametersFault);
   CHECK_THROWS_AS(value->AsString(), InvalidParametersFault);
   CHECK_THROWS_AS(value->AsStruct(), InvalidParametersFault);
+
+  CHECK_THROWS_AS((*value)[0], InvalidParametersFault);
+  CHECK_THROWS_AS((*value)["notthere"], InvalidParametersFault);
 
   CHECK(value->AsDouble() == 1.5);
 
@@ -254,6 +269,9 @@ TEST_CASE("integer 32")
   CHECK_THROWS_AS(value->AsString(), InvalidParametersFault);
   CHECK_THROWS_AS(value->AsStruct(), InvalidParametersFault);
 
+  CHECK_THROWS_AS((*value)[0], InvalidParametersFault);
+  CHECK_THROWS_AS((*value)["notthere"], InvalidParametersFault);
+
   CHECK(value->AsInteger32() == 42);
 
   CHECK(ToXml(*value) == "<value><i4>42</i4></value>");
@@ -293,6 +311,9 @@ TEST_CASE("integer 64")
   CHECK_NOTHROW(value->AsInteger64());
   CHECK_THROWS_AS(value->AsString(), InvalidParametersFault);
   CHECK_THROWS_AS(value->AsStruct(), InvalidParametersFault);
+
+  CHECK_THROWS_AS((*value)[0], InvalidParametersFault);
+  CHECK_THROWS_AS((*value)["notthere"], InvalidParametersFault);
 
   CHECK(value->AsInteger64() == -5000000000);
 
@@ -339,6 +360,9 @@ TEST_CASE("string")
   CHECK_THROWS_AS(value->AsInteger64(), InvalidParametersFault);
   CHECK_NOTHROW(value->AsString());
   CHECK_THROWS_AS(value->AsStruct(), InvalidParametersFault);
+
+  CHECK_THROWS_AS((*value)[0], InvalidParametersFault);
+  CHECK_THROWS_AS((*value)["notthere"], InvalidParametersFault);
 
   CHECK(value->AsString() == "1 2 3 &amp;");
 
@@ -400,7 +424,17 @@ TEST_CASE("struct")
   CHECK_THROWS_AS(value->AsString(), InvalidParametersFault);
   CHECK_NOTHROW(value->AsStruct());
 
+  CHECK_THROWS_AS((*value)[0], InvalidParametersFault);
+
   REQUIRE(value->AsStruct().size() == 3);
+  CHECK(value->AsStruct().at("bar").IsArray());
+  CHECK(value->AsStruct().at("foo").AsBoolean());
+  CHECK(value->AsStruct().at("test").AsInteger32() == -34);
+
+  CHECK((*value)["bar"].IsArray());
+  CHECK((*value)["foo"].AsBoolean());
+  CHECK((*value)["test"].AsInteger32() == -34);
+  CHECK_THROWS_AS((*value)["notthere"], std::out_of_range);
 
   CHECK(ToXml(*value) ==
         "<value>\n"

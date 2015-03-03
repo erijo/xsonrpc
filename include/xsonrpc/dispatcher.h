@@ -38,16 +38,17 @@ public:
   MethodWrapper(const MethodWrapper&) = delete;
   MethodWrapper& operator=(const MethodWrapper&) = delete;
 
-  void SetHelpText(std::string help) { myHelpText = std::move(help); }
+  MethodWrapper& SetHelpText(std::string help);
   const std::string& GetHelpText() const { return myHelpText; }
   bool HasHelpText() const { return !myHelpText.empty(); }
 
   template<typename... ParameterTypes>
-  void AddSignature(Value::Type returnType,
-                    ParameterTypes... parameterTypes)
+  MethodWrapper& AddSignature(Value::Type returnType,
+                              ParameterTypes... parameterTypes)
   {
     mySignatures.emplace_back(
         std::initializer_list<Value::Type>{returnType, parameterTypes...});
+    return *this;
   }
 
   const std::vector<std::vector<Value::Type>>&
@@ -67,6 +68,8 @@ private:
 class Dispatcher
 {
 public:
+  Dispatcher();
+  
   MethodWrapper& AddMethod(
       std::string name, MethodWrapper::Method method);
   void RemoveMethod(const std::string& name);
@@ -75,6 +78,8 @@ public:
                   const Request::Parameters& parameters) const;
 
 private:
+  Value SystemMulticall(const Request::Parameters& parameters) const;
+
   std::map<std::string, MethodWrapper> myMethods;
 };
 

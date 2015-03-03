@@ -79,3 +79,68 @@ TEST_CASE("dispatcher")
     CHECK(response.IsFault());
   }
 }
+
+TEST_CASE("dispatcher multicall")
+{
+  Dispatcher dispatcher;
+  dispatcher.AddMethod("test", &TestMethod);
+  dispatcher.AddMethod("foobar", &TestMethod);
+
+  Value::Array parameters;
+
+  {
+    Value::Array params;
+    params.emplace_back(1);
+    params.emplace_back("test");
+
+    Value::Struct call;
+    call["methodName"] = "foobar";
+    call["params"] = std::move(params);
+
+    parameters.push_back(std::move(call));
+  }
+
+  {
+    Value::Array params;
+    params.emplace_back("test");
+
+    Value::Struct call;
+    call["methodName"] = "nosuchmethod";
+    call["params"] = std::move(params);
+
+    parameters.push_back(std::move(call));
+  }
+
+  {
+    Value::Array params;
+
+    Value::Struct call;
+    call["methodName"] = "test";
+    call["params"] = std::move(params);
+
+    parameters.push_back(std::move(call));
+  }
+
+  auto response = dispatcher.Invoke(
+      "system.multicall", Value::Array{std::move(parameters)});
+  REQUIRE_FALSE(response.IsFault());
+
+  auto& value = response.GetResult();
+  REQUIRE(value.IsArray());
+  REQUIRE(value.AsArray().size() == 3);
+
+  // First result
+  CHECK(value[0].IsArray());
+  CHECK(value[0].AsArray().size() == 1);
+  CHECK(value[0][0].AsInteger32() == 1);
+
+  // Second result
+  CHECK(value[1].IsStruct());
+  CHECK_NOTHROW(value[1]["faultString"]);
+  CHECK(value[1]["faultCode"].AsInteger32() == MethodNotFoundFault::CODE);
+
+  // Third result
+  CHECK(value[2].IsArray());
+  CHECK(value[2].AsArray().size() == 1);
+  CHECK(value[2][0].AsBoolean());
+}

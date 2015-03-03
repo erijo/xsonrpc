@@ -34,4 +34,11 @@ Fault::operator Value() const
   return std::move(fault);
 }
 
+const int32_t NotWellFormedFault::CODE = -32700;
+const int32_t InvalidCharacterFault::CODE = -32702;
+const int32_t InvalidXmlRpcFault::CODE = -32600;
+const int32_t MethodNotFoundFault::CODE = -32601;
+const int32_t InvalidParametersFault::CODE = -32602;
+const int32_t InternalFault::CODE = -32603;
+
 } // namespace xsonrpc

@@ -72,49 +72,49 @@ private:
 class NotWellFormedFault : public Fault
 {
 public:
-  static constexpr int32_t Code = -32700;
+  static const int32_t CODE;
   NotWellFormedFault()
-    : Fault(Code, "XML document not well formed") {}
+    : Fault(CODE, "XML document not well formed") {}
 };
 
 class InvalidCharacterFault : public Fault
 {
 public:
-  static constexpr int32_t Code = -32702;
+  static const int32_t CODE;
   InvalidCharacterFault()
-    : Fault(Code, "Invalid character for encoding") {}
+    : Fault(CODE, "Invalid character for encoding") {}
 };
 
 class InvalidXmlRpcFault : public Fault
 {
 public:
-  static constexpr int32_t Code = -32600;
+  static const int32_t CODE;
   InvalidXmlRpcFault(const std::string& error)
-    : Fault(Code, "Invalid XML-RPC: " + error) {}
+    : Fault(CODE, "Invalid XML-RPC: " + error) {}
 };
 
 class MethodNotFoundFault : public Fault
 {
 public:
-  static constexpr int32_t Code = -32601;
+  static const int32_t CODE;
   MethodNotFoundFault(const std::string& methodName)
-    : Fault(Code, "No such method " + methodName) {}
+    : Fault(CODE, "No such method " + methodName) {}
 };
 
 class InvalidParametersFault : public Fault
 {
 public:
-  static constexpr int32_t Code = -32602;
+  static const int32_t CODE;
   InvalidParametersFault()
-    : Fault(Code, "Invalid parameters") {}
+    : Fault(CODE, "Invalid parameters") {}
 };
 
 class InternalFault : public Fault
 {
 public:
-  static constexpr int32_t Code = -32603;
+  static const int32_t CODE;
   InternalFault(std::string error)
-    : Fault(Code, std::move(error)) {}
+    : Fault(CODE, std::move(error)) {}
 };
 
 } // namespace xsonrpc

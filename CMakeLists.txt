@@ -25,9 +25,13 @@ add_library(xsonrpc SHARED
   src/fault.cpp
   src/request.cpp
   src/response.cpp
+  src/server.cpp
   src/util.cpp
   src/value.cpp
 )
+
+# TODO: detect microhttpd
+target_link_libraries(xsonrpc microhttpd)
 
 # Unit tests
 enable_testing()
@@ -50,3 +54,9 @@ add_custom_command(OUTPUT "${unittest_stamp}"
   COMMENT "Running unit test"
   DEPENDS unittest)
 add_custom_target(unittest_run ALL DEPENDS "${unittest_stamp}")
+
+# Examples
+add_executable(testserver
+  examples/testserver.cpp
+)
+target_link_libraries(testserver xsonrpc)

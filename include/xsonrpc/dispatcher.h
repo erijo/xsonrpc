@@ -124,7 +124,12 @@ private:
           if (params.size() != sizeof...(ParameterTypes)) {
             throw InvalidParametersFault();
           }
-          return method(params[index].AsType<ParameterTypes>()...);
+          return method(
+              params[index].AsType<
+              typename std::remove_cv<
+              typename std::remove_reference<ParameterTypes>::type
+              >::type
+              >()...);
         });
   }
 

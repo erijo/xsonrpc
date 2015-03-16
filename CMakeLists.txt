@@ -12,6 +12,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 # tinyxml2 (TODO: use installed if available)
 include_directories("3pp/tinyxml2")
 
+# integer_sequence for c++11 compiler
+include_directories("3pp/integer_seq")
+
 # Public headers
 include_directories("include/xsonrpc")
 

@@ -22,6 +22,14 @@
 #include "response.h"
 #include "value.h"
 
+#if __cplusplus <= 201103L
+#include "integer_seq.h"
+namespace std {
+using redi::index_sequence;
+using redi::index_sequence_for;
+} // namespace std
+#endif
+
 #include <functional>
 #include <utility>
 #include <vector>
@@ -72,12 +80,54 @@ public:
   
   MethodWrapper& AddMethod(
       std::string name, MethodWrapper::Method method);
+
+  template<typename ReturnType, typename... ParameterTypes>
+  typename std::enable_if<!std::is_same<ReturnType, Value>::value,
+                          MethodWrapper>::type&
+  AddMethod(std::string name,
+            std::function<ReturnType(ParameterTypes...)> method)
+  {
+    return AddMethodInternal(
+        std::move(name),
+        std::move(method),
+        std::index_sequence_for<ParameterTypes...>{});
+  }
+
+  template<typename ReturnType, typename... ParameterTypes>
+  typename std::enable_if<!std::is_same<ReturnType, Value>::value,
+                          MethodWrapper>::type&
+  AddMethod(std::string name,
+            ReturnType (*function)(ParameterTypes...))
+  {
+    return AddMethodInternal(
+        std::move(name),
+        std::function<ReturnType(ParameterTypes...)>(function),
+        std::index_sequence_for<ParameterTypes...>{});
+  }
+
   void RemoveMethod(const std::string& name);
 
   Response Invoke(const std::string& name,
                   const Request::Parameters& parameters) const;
 
 private:
+  template<typename ReturnType, typename... ParameterTypes,
+           std::size_t... index>
+  MethodWrapper& AddMethodInternal(
+      std::string name, std::function<ReturnType(ParameterTypes...)> method,
+      std::index_sequence<index...>)
+  {
+    return AddMethod(
+        std::move(name),
+        [method] (const Request::Parameters& params) -> Value
+        {
+          if (params.size() != sizeof...(ParameterTypes)) {
+            throw InvalidParametersFault();
+          }
+          return method(params[index].AsType<ParameterTypes>()...);
+        });
+  }
+
   Value SystemMulticall(const Request::Parameters& parameters) const;
 
   std::map<std::string, MethodWrapper> myMethods;

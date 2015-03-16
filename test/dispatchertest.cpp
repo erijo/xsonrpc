@@ -31,6 +31,11 @@ Value TestMethod(const Request::Parameters& params)
   return Value(params[0]);
 }
 
+bool TestMethodBool()
+{
+  return true;
+}
+
 } // namespace
 
 TEST_CASE("method wrapper")
@@ -65,10 +70,35 @@ TEST_CASE("method wrapper")
 TEST_CASE("dispatcher")
 {
   Dispatcher dispatcher;
-  dispatcher.AddMethod("test", &TestMethod);
+
+  GIVEN("regular function")
+  {
+    dispatcher.AddMethod("test", &TestMethod);
+  }
+
+  GIVEN("lambda")
+  {
+    dispatcher.AddMethod("test",
+                         [](const Request::Parameters& params)
+                         {
+                           return Value(true);
+                         });
+  }
+
+  GIVEN("function with regular types")
+  {
+    dispatcher.AddMethod("test", &TestMethodBool);
+  }
+
+  GIVEN("lambda with regular types")
+  {
+    dispatcher.AddMethod("test",
+                         std::function<bool()>([]() { return true; }));
+  }
 
   {
     auto response = dispatcher.Invoke("test", {});
+    CHECK_FALSE(response.IsFault());
     CHECK(response.GetResult().AsBoolean());
   }
 
@@ -83,7 +113,7 @@ TEST_CASE("dispatcher")
 TEST_CASE("dispatcher multicall")
 {
   Dispatcher dispatcher;
-  dispatcher.AddMethod("test", &TestMethod);
+  dispatcher.AddMethod("test", &TestMethodBool);
   dispatcher.AddMethod("foobar", &TestMethod);
 
   Value::Array parameters;

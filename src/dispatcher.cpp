@@ -48,7 +48,7 @@ MethodWrapper& Dispatcher::AddMethod(
   auto result = myMethods.emplace(
       std::piecewise_construct,
       std::forward_as_tuple(std::move(name)),
-      std::forward_as_tuple(method));
+      std::forward_as_tuple(std::move(method)));
   if (!result.second) {
     throw std::invalid_argument(name + ": method already added");
   }

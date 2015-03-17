@@ -152,7 +152,7 @@ TEST_CASE("dispatcher multicall")
   }
 
   auto response = dispatcher.Invoke(
-      "system.multicall", Value::Array{std::move(parameters)});
+    "system.multicall", Value::Array{std::move(parameters)});
   REQUIRE_FALSE(response.IsFault());
 
   auto& value = response.GetResult();

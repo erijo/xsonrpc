@@ -41,7 +41,7 @@ public:
       myFaultCode = 0;
     }
   }
-  
+
   int32_t GetCode() const { return myFaultCode; }
   const std::string& GetString() const { return myFaultString; }
 

@@ -38,7 +38,7 @@ public:
   Value& GetResult() { return myResult; }
   const Value& GetResult() const { return myResult; }
   bool IsFault() const { return myIsFault; }
-  
+
 private:
   Value myResult;
   bool myIsFault;

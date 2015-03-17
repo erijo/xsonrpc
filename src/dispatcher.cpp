@@ -38,17 +38,17 @@ Dispatcher::Dispatcher()
   using namespace std::placeholders;
   AddMethod(SYSTEM_MULTICALL,
             std::bind(&Dispatcher::SystemMulticall, this, _1))
-      .SetHelpText("Call multiple methods at once")
-      .AddSignature(Value::Type::ARRAY, Value::Type::ARRAY);
+    .SetHelpText("Call multiple methods at once")
+    .AddSignature(Value::Type::ARRAY, Value::Type::ARRAY);
 }
 
 MethodWrapper& Dispatcher::AddMethod(
-    std::string name, MethodWrapper::Method method)
+  std::string name, MethodWrapper::Method method)
 {
   auto result = myMethods.emplace(
-      std::piecewise_construct,
-      std::forward_as_tuple(std::move(name)),
-      std::forward_as_tuple(std::move(method)));
+    std::piecewise_construct,
+    std::forward_as_tuple(std::move(name)),
+    std::forward_as_tuple(std::move(method)));
   if (!result.second) {
     throw std::invalid_argument(name + ": method already added");
   }

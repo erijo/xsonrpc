@@ -55,7 +55,7 @@ public:
                               ParameterTypes... parameterTypes)
   {
     mySignatures.emplace_back(
-        std::initializer_list<Value::Type>{returnType, parameterTypes...});
+      std::initializer_list<Value::Type>{returnType, parameterTypes...});
     return *this;
   }
 
@@ -77,9 +77,9 @@ class Dispatcher
 {
 public:
   Dispatcher();
-  
+
   MethodWrapper& AddMethod(
-      std::string name, MethodWrapper::Method method);
+    std::string name, MethodWrapper::Method method);
 
   template<typename ReturnType, typename... ParameterTypes>
   typename std::enable_if<!std::is_same<ReturnType, Value>::value,
@@ -88,9 +88,9 @@ public:
             std::function<ReturnType(ParameterTypes...)> method)
   {
     return AddMethodInternal(
-        std::move(name),
-        std::move(method),
-        std::index_sequence_for<ParameterTypes...>{});
+      std::move(name),
+      std::move(method),
+      std::index_sequence_for<ParameterTypes...>{});
   }
 
   template<typename ReturnType, typename... ParameterTypes>
@@ -100,9 +100,9 @@ public:
             ReturnType (*function)(ParameterTypes...))
   {
     return AddMethodInternal(
-        std::move(name),
-        std::function<ReturnType(ParameterTypes...)>(function),
-        std::index_sequence_for<ParameterTypes...>{});
+      std::move(name),
+      std::function<ReturnType(ParameterTypes...)>(function),
+      std::index_sequence_for<ParameterTypes...>{});
   }
 
   void RemoveMethod(const std::string& name);
@@ -114,23 +114,23 @@ private:
   template<typename ReturnType, typename... ParameterTypes,
            std::size_t... index>
   MethodWrapper& AddMethodInternal(
-      std::string name, std::function<ReturnType(ParameterTypes...)> method,
-      std::index_sequence<index...>)
+    std::string name, std::function<ReturnType(ParameterTypes...)> method,
+    std::index_sequence<index...>)
   {
     return AddMethod(
-        std::move(name),
-        [method] (const Request::Parameters& params) -> Value
-        {
-          if (params.size() != sizeof...(ParameterTypes)) {
-            throw InvalidParametersFault();
-          }
-          return method(
-              params[index].AsType<
-              typename std::remove_cv<
-              typename std::remove_reference<ParameterTypes>::type
-              >::type
-              >()...);
-        });
+      std::move(name),
+      [method] (const Request::Parameters& params) -> Value
+      {
+        if (params.size() != sizeof...(ParameterTypes)) {
+          throw InvalidParametersFault();
+        }
+        return method(
+          params[index].AsType<
+          typename std::remove_cv<
+          typename std::remove_reference<ParameterTypes>::type
+          >::type
+          >()...);
+      });
   }
 
   Value SystemMulticall(const Request::Parameters& parameters) const;

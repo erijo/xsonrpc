@@ -100,10 +100,10 @@ TEST_CASE("array")
   GIVEN("from xml")
   {
     value = FromXml(
-        "<array><data>"
-        "  <value><int>1</int></value>"
-        "  <value><boolean>0</boolean></value>"
-        "</data></array>");
+      "<array><data>"
+      "  <value><int>1</int></value>"
+      "  <value><boolean>0</boolean></value>"
+      "</data></array>");
   }
 
   // Type check
@@ -389,18 +389,18 @@ TEST_CASE("struct")
   GIVEN("from xml")
   {
     value = FromXml(
-        "<struct><member>"
-        "  <name>bar</name>"
-        "  <value><array><data>"
-        "    <value><string>a string</string></value>"
-        "  </data></array></value>"
-        "</member><member>"
-        "  <name>foo</name>"
-        "  <value><boolean>1</boolean></value>"
-        "</member><member>"
-        "  <name>test</name>"
-        "  <value><i4>-34</i4></value>"
-        "</member></struct>");
+      "<struct><member>"
+      "  <name>bar</name>"
+      "  <value><array><data>"
+      "    <value><string>a string</string></value>"
+      "  </data></array></value>"
+      "</member><member>"
+      "  <name>foo</name>"
+      "  <value><boolean>1</boolean></value>"
+      "</member><member>"
+      "  <name>test</name>"
+      "  <value><i4>-34</i4></value>"
+      "</member></struct>");
   }
 
   // Type check

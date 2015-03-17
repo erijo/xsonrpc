@@ -40,7 +40,7 @@ TEST_CASE("invalid request")
   {
     document.Parse("<methodCall><methodName/></methodCall>");
   }
-  
+
   CHECK_THROWS_AS(Request(document.RootElement()), std::exception);
 }
 
@@ -54,7 +54,7 @@ TEST_CASE("only method name")
                    "<methodName>test</methodName>"
                    "</methodCall>");
   }
-  
+
   GIVEN("empty params tag")
   {
     document.Parse("<methodCall>"
@@ -62,10 +62,10 @@ TEST_CASE("only method name")
                    "<params/>"
                    "</methodCall>");
   }
-  
+
   Request request(document.RootElement());
   CHECK(request.GetMethodName() == "test");
-  CHECK(request.GetParameters().empty());  
+  CHECK(request.GetParameters().empty());
 }
 
 TEST_CASE("one parameter")

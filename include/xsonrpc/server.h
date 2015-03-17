@@ -44,21 +44,21 @@ private:
 
   // Callbacks
   static int AccessHandlerCallback(
-      void* cls, MHD_Connection* connection,
-      const char* url, const char* method, const char* version,
-      const char* uploadData, size_t* uploadDataSize,
-      void** connectionCls);
+    void* cls, MHD_Connection* connection,
+    const char* url, const char* method, const char* version,
+    const char* uploadData, size_t* uploadDataSize,
+    void** connectionCls);
   int AccessHandler(
-      MHD_Connection* connection,
-      const char* url, const char* method, const char* version,
-      const char* uploadData, size_t* uploadDataSize,
-      void** connectionCls);
+    MHD_Connection* connection,
+    const char* url, const char* method, const char* version,
+    const char* uploadData, size_t* uploadDataSize,
+    void** connectionCls);
   static void RequestCompletedCallback(
-      void* cls, MHD_Connection* connection,
-      void** connectionCls, int requestTerminationCode);
+    void* cls, MHD_Connection* connection,
+    void** connectionCls, int requestTerminationCode);
   void OnRequestCompleted(
-      MHD_Connection* connection, void** connectionCls,
-      int requestTerminationCode);
+    MHD_Connection* connection, void** connectionCls,
+    int requestTerminationCode);
 
   std::string myUri;
   MHD_Daemon* myDaemon;

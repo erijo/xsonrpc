@@ -45,10 +45,10 @@ Server::Server(unsigned short port, std::string uri)
   : myUri(std::move(uri))
 {
   myDaemon = MHD_start_daemon(
-      MHD_USE_EPOLL_LINUX_ONLY,
-      port, NULL, NULL, &Server::AccessHandlerCallback, this,
-      MHD_OPTION_NOTIFY_COMPLETED, &Server::RequestCompletedCallback, this,
-      MHD_OPTION_END);
+    MHD_USE_EPOLL_LINUX_ONLY,
+    port, NULL, NULL, &Server::AccessHandlerCallback, this,
+    MHD_OPTION_NOTIFY_COMPLETED, &Server::RequestCompletedCallback, this,
+    MHD_OPTION_END);
   if (!myDaemon) {
     throw std::runtime_error("server: could not start HTTP daemon");
   }
@@ -69,7 +69,7 @@ void Server::Run()
 int Server::GetFileDescriptor()
 {
   auto info = MHD_get_daemon_info(
-      myDaemon, MHD_DAEMON_INFO_EPOLL_FD_LINUX_ONLY);
+    myDaemon, MHD_DAEMON_INFO_EPOLL_FD_LINUX_ONLY);
   if (!info || info->listen_fd == -1) {
     throw std::runtime_error("server: could not get file descriptor");
   }
@@ -101,7 +101,7 @@ void Server::HandleRequest(MHD_Connection* connection, void* connectionCls)
     Request request{document.RootElement()};
     document.Clear();
     auto response = myDispatcher.Invoke(
-        request.GetMethodName(), request.GetParameters());
+      request.GetMethodName(), request.GetParameters());
     response.Print(info->Printer);
   }
   catch (const Fault& ex) {
@@ -109,33 +109,33 @@ void Server::HandleRequest(MHD_Connection* connection, void* connectionCls)
   }
 
   auto response = MHD_create_response_from_buffer(
-      info->Printer.CStrSize() - 1,
-      const_cast<char*>(info->Printer.CStr()),
-      MHD_RESPMEM_PERSISTENT);
-  
+    info->Printer.CStrSize() - 1,
+    const_cast<char*>(info->Printer.CStr()),
+    MHD_RESPMEM_PERSISTENT);
+
   MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE, TEXT_XML);
   MHD_queue_response(connection, MHD_HTTP_OK, response);
   MHD_destroy_response(response);
 }
 
 int Server::AccessHandlerCallback(
-    void* cls, MHD_Connection* connection,
-    const char* url, const char* method, const char* version,
-    const char* uploadData, size_t* uploadDataSize,
-    void** connectionCls)
+  void* cls, MHD_Connection* connection,
+  const char* url, const char* method, const char* version,
+  const char* uploadData, size_t* uploadDataSize,
+  void** connectionCls)
 {
   return static_cast<Server*>(cls)->AccessHandler(
-      connection, url, method, version, uploadData, uploadDataSize,
-      connectionCls);
+    connection, url, method, version, uploadData, uploadDataSize,
+    connectionCls);
 }
 
 int Server::AccessHandler(
-    MHD_Connection* connection,
-    const char* url, const char* method, const char* version,
-    const char* uploadData, size_t* uploadDataSize,
-    void** connectionCls)
+  MHD_Connection* connection,
+  const char* url, const char* method, const char* version,
+  const char* uploadData, size_t* uploadDataSize,
+  void** connectionCls)
 {
-  try { 
+  try {
     if (*connectionCls != NULL) {
       if (*uploadDataSize == 0) {
         HandleRequest(connection, *connectionCls);
@@ -178,16 +178,16 @@ int Server::AccessHandler(
 }
 
 void Server::RequestCompletedCallback(
-    void* cls, MHD_Connection* connection,
-    void** connectionCls, int requestTerminationCode)
+  void* cls, MHD_Connection* connection,
+  void** connectionCls, int requestTerminationCode)
 {
   static_cast<Server*>(cls)->OnRequestCompleted(
-      connection, connectionCls, requestTerminationCode);
+    connection, connectionCls, requestTerminationCode);
 }
 
 void Server::OnRequestCompleted(
-    MHD_Connection* connection, void** connectionCls,
-    int requestTerminationCode)
+  MHD_Connection* connection, void** connectionCls,
+  int requestTerminationCode)
 {
   delete static_cast<ConnectionInfo*>(*connectionCls);
 }

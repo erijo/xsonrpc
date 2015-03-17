@@ -52,7 +52,7 @@ Value::Value(const tinyxml2::XMLElement* element)
   if (!element || !util::IsTag(*element, VALUE_TAG)) {
     throw InvalidXmlRpcFault("missing value element");
   }
-      
+
   auto value = element->FirstChildElement();
   if (!value) {
     throw InvalidXmlRpcFault("empty value element");

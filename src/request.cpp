@@ -55,4 +55,30 @@ Request::Request(const tinyxml2::XMLElement* root)
   }
 }
 
+void Request::Print(tinyxml2::XMLPrinter& printer) const
+{
+  Print(myMethodName, myParameters, printer);
+}
+
+void Request::Print(const std::string& methodName, const Parameters& params,
+                    tinyxml2::XMLPrinter& printer)
+{
+  printer.PushHeader(false, true);
+  printer.OpenElement(METHOD_CALL_TAG);
+
+  printer.OpenElement(METHOD_NAME_TAG);
+  printer.PushText(methodName.c_str());
+  printer.CloseElement();
+
+  printer.OpenElement(PARAMS_TAG);
+  for (auto& param : params) {
+    printer.OpenElement(PARAM_TAG);
+    param.Print(printer);
+    printer.CloseElement();
+  }
+  printer.CloseElement();
+
+  printer.CloseElement();
+}
+
 } // namespace xsonrpc

@@ -22,6 +22,17 @@
 
 using namespace xsonrpc;
 
+namespace {
+
+std::string ToXml(const Request& request)
+{
+  tinyxml2::XMLPrinter printer(nullptr);
+  request.Print(printer);
+  return printer.CStr();
+}
+
+} // namespace
+
 TEST_CASE("invalid request")
 {
   tinyxml2::XMLDocument document;
@@ -66,6 +77,12 @@ TEST_CASE("only method name")
   Request request(document.RootElement());
   CHECK(request.GetMethodName() == "test");
   CHECK(request.GetParameters().empty());
+  CHECK(ToXml(request) ==
+        "<?xml version=\"1.0\"?>\n"
+        "<methodCall>\n"
+        "    <methodName>test</methodName>\n"
+        "    <params/>\n"
+        "</methodCall>\n");
 }
 
 TEST_CASE("one parameter")
@@ -82,6 +99,16 @@ TEST_CASE("one parameter")
   CHECK(request.GetMethodName() == "test");
   REQUIRE_FALSE(request.GetParameters().empty());
   CHECK(request.GetParameters()[0].IsInteger32());
+  CHECK(ToXml(request) ==
+        "<?xml version=\"1.0\"?>\n"
+        "<methodCall>\n"
+        "    <methodName>test</methodName>\n"
+        "    <params>\n"
+        "        <param>\n"
+        "            <value><i4>47</i4></value>\n"
+        "        </param>\n"
+        "    </params>\n"
+        "</methodCall>\n");
 }
 
 
@@ -103,4 +130,20 @@ TEST_CASE("three parameters")
   CHECK(request.GetParameters()[0].AsInteger32() == 47);
   CHECK(request.GetParameters()[1].AsInteger32() == 46);
   CHECK(request.GetParameters()[2].AsInteger32() == 45);
+  CHECK(ToXml(request) ==
+        "<?xml version=\"1.0\"?>\n"
+        "<methodCall>\n"
+        "    <methodName>test</methodName>\n"
+        "    <params>\n"
+        "        <param>\n"
+        "            <value><i4>47</i4></value>\n"
+        "        </param>\n"
+        "        <param>\n"
+        "            <value><i4>46</i4></value>\n"
+        "        </param>\n"
+        "        <param>\n"
+        "            <value><i4>45</i4></value>\n"
+        "        </param>\n"
+        "    </params>\n"
+        "</methodCall>\n");
 }

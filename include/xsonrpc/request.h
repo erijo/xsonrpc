@@ -25,6 +25,7 @@
 
 namespace tinyxml2 {
 class XMLElement;
+class XMLPrinter;
 }
 
 namespace xsonrpc {
@@ -38,6 +39,10 @@ public:
 
   const std::string& GetMethodName() const { return myMethodName; }
   const Parameters& GetParameters() const { return myParameters; }
+
+  void Print(tinyxml2::XMLPrinter& printer) const;
+  static void Print(const std::string& methodName, const Parameters& params,
+                    tinyxml2::XMLPrinter& printer);
 
 private:
   std::string myMethodName;

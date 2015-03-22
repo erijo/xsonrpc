@@ -37,6 +37,7 @@ TEST_CASE("bool response")
 {
   Response response(Value(true));
   CHECK_FALSE(response.IsFault());
+  CHECK_NOTHROW(response.ThrowIfFault());
   CHECK(response.GetResult().AsBoolean());
 
   CHECK(ToXml(response) ==
@@ -54,6 +55,7 @@ TEST_CASE("fault response")
 {
   Response response(Fault("test", 123));
   CHECK(response.IsFault());
+  CHECK_THROWS_AS(response.ThrowIfFault(), Fault);
 
   CHECK(ToXml(response) ==
         "<?xml version=\"1.0\"?>\n"

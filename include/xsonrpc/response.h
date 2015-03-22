@@ -22,6 +22,7 @@
 #include "value.h"
 
 namespace tinyxml2 {
+class XMLElement;
 class XMLPrinter;
 }
 
@@ -30,6 +31,8 @@ namespace xsonrpc {
 class Response
 {
 public:
+  explicit Response(const tinyxml2::XMLElement* root);
+
   Response(Value value);
   Response(const Fault& fault);
 
@@ -38,6 +41,7 @@ public:
   Value& GetResult() { return myResult; }
   const Value& GetResult() const { return myResult; }
   bool IsFault() const { return myIsFault; }
+  void ThrowIfFault() const;
 
 private:
   Value myResult;

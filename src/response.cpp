@@ -16,6 +16,7 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "response.h"
+#include "util.h"
 
 #include <tinyxml2.h>
 
@@ -32,6 +33,44 @@ const char FAULT_STRING_NAME[] = "faultString";
 } // namespace
 
 namespace xsonrpc {
+
+Response::Response(const tinyxml2::XMLElement* root)
+{
+  if (!root || !util::IsTag(*root, METHOD_RESPONSE_TAG)) {
+    throw InvalidXmlRpcFault("missing method response element");
+  }
+
+  auto value = root->FirstChildElement(PARAMS_TAG);
+  if (value) {
+    myIsFault = false;
+    value = value->FirstChildElement(PARAM_TAG);
+  }
+  else {
+    myIsFault = true;
+    value = root->FirstChildElement(FAULT_TAG);
+  }
+
+  if (!value) {
+    throw InvalidXmlRpcFault("missing param or fault element");
+  }
+
+  myResult = Value(value->FirstChildElement());
+
+  if (myIsFault) {
+    if (!myResult.IsStruct()) {
+      throw InvalidXmlRpcFault("fault is not a struct");
+    }
+    auto& s = myResult.AsStruct();
+    if (s.find(FAULT_CODE_NAME) == s.end()
+        || !s.find(FAULT_CODE_NAME)->second.IsInteger32()) {
+      throw InvalidXmlRpcFault("missing or invalid fault code");
+    }
+    if (s.find(FAULT_STRING_NAME) == s.end()
+        || !s.find(FAULT_STRING_NAME)->second.IsString()) {
+      throw InvalidXmlRpcFault("missing or invalid fault string");
+    }
+  }
+}
 
 Response::Response(Value value)
   : myResult(std::move(value)),
@@ -64,6 +103,17 @@ void Response::Print(tinyxml2::XMLPrinter& printer) const
   }
 
   printer.CloseElement();
+}
+
+void Response::ThrowIfFault() const
+{
+  if (!IsFault()) {
+    return;
+  }
+
+  //TODO: auto faultCode = myResult[FAULT_CODE_NAME];
+  auto& faultString = myResult[FAULT_STRING_NAME];
+  throw Fault(faultString.AsString());
 }
 
 } // namespace xsonrpc

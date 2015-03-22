@@ -19,6 +19,7 @@
 #define XSONRPC_VALUE_H
 
 #include <cstdint>
+#include <iosfwd>
 #include <map>
 #include <string>
 #include <unordered_map>
@@ -119,9 +120,10 @@ public:
   const Struct& AsStruct() const;
 
   template<typename T>
-  const T& AsType() const;
+  inline const T& AsType() const;
 
   static std::string GetTypeName(Type type);
+  Type GetType() const { return myType; }
 
   void Print(tinyxml2::XMLPrinter& printer) const;
 
@@ -195,6 +197,8 @@ inline const Value& Value::operator[](const Struct::key_type& key) const
 {
   return AsStruct().at(key);
 }
+
+std::ostream& operator<<(std::ostream& os, const Value& value);
 
 } // namespace xsonrpc
 

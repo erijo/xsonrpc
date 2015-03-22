@@ -19,6 +19,7 @@
 #include "fault.h"
 #include "value.h"
 
+#include <ostream>
 #include <string>
 #include <tinyxml2.h>
 #include <typeinfo>
@@ -380,6 +381,61 @@ void Value::Reset()
   }
 
   myType = Type::NIL;
+}
+
+std::ostream& operator<<(std::ostream& os, const Value& value)
+{
+  switch (value.GetType()) {
+    case Value::Type::ARRAY: {
+      os << '[';
+      auto& a = value.AsArray();
+      for (auto it = a.begin(); it != a.end(); ++it) {
+        if (it != a.begin()) {
+          os << ", ";
+        }
+        os << *it;
+      }
+      os << ']';
+      break;
+    }
+    case Value::Type::BASE_64:
+      // TODO:
+      break;
+    case Value::Type::BOOLEAN:
+      os << value.AsBoolean();
+      break;
+    case Value::Type::DATE_TIME:
+      // TODO:
+      break;
+    case Value::Type::DOUBLE:
+      os << value.AsDouble();
+      break;
+    case Value::Type::INTEGER_32:
+      os << value.AsInteger32();
+      break;
+    case Value::Type::INTEGER_64:
+      os << value.AsInteger64();
+      break;
+    case Value::Type::NIL:
+      os << "<nil>";
+      break;
+    case Value::Type::STRING:
+      os << '"' << value.AsString() << '"';
+      break;
+    case Value::Type::STRUCT: {
+      os << '{';
+      auto& s = value.AsStruct();
+      for (auto it = s.begin(); it != s.end(); ++it) {
+        if (it != s.begin()) {
+          os << ", ";
+        }
+        os << '"' << it->first << "\": " << it->second;
+      }
+      os << '}';
+      break;
+    }
+  }
+  return os;
 }
 
 } // namespace xsonrpc

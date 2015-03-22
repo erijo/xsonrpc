@@ -21,6 +21,7 @@ include_directories("include/xsonrpc")
 # Main library
 add_library(xsonrpc SHARED
   3pp/tinyxml2/tinyxml2.cpp
+  src/client.cpp
   src/dispatcher.cpp
   src/fault.cpp
   src/request.cpp
@@ -32,6 +33,9 @@ add_library(xsonrpc SHARED
 
 # TODO: detect microhttpd
 target_link_libraries(xsonrpc microhttpd)
+
+# TODO: detect cURL
+target_link_libraries(xsonrpc curl)
 
 # Unit tests
 enable_testing()
@@ -60,3 +64,8 @@ add_executable(testserver
   examples/testserver.cpp
 )
 target_link_libraries(testserver xsonrpc)
+
+add_executable(testclient
+  examples/testclient.cpp
+)
+target_link_libraries(testclient xsonrpc)

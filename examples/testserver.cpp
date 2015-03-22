@@ -17,16 +17,34 @@
 
 #include "server.h"
 
+#include <numeric>
 #include <poll.h>
+#include <string>
 
 int Add(int a, int b)
 {
   return a + b;
 }
 
+int64_t AddArray(const xsonrpc::Value::Array& a)
+{
+  return std::accumulate(a.begin(), a.end(), int64_t(0),
+                         [](const int64_t& a, const xsonrpc::Value& b)
+                         { return a + b.AsInteger32(); });
+};
+
 std::string Concat(const std::string& a, const std::string& b)
 {
   return a + b;
+}
+
+xsonrpc::Value::Struct ToStruct(const xsonrpc::Value::Array& a)
+{
+  xsonrpc::Value::Struct s;
+  for (size_t i = 0; i < a.size(); ++i) {
+    s[std::to_string(i)] = xsonrpc::Value(a[i]);
+  }
+  return s;
 }
 
 int main()
@@ -35,7 +53,9 @@ int main()
 
   auto& dispatcher = server.GetDispatcher();
   dispatcher.AddMethod("add", &Add);
+  dispatcher.AddMethod("add_array", &AddArray);
   dispatcher.AddMethod("concat", &Concat);
+  dispatcher.AddMethod("to_struct", &ToStruct);
 
   server.Run();
 

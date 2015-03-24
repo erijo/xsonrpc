@@ -89,6 +89,12 @@ Value Client::CallInternal(const std::string& methodName,
     throw std::runtime_error("client: failed to perform cURL call");
   }
 
+  long responseCode;
+  if (curl_easy_getinfo(myHandle, CURLINFO_RESPONSE_CODE, &responseCode)
+      != CURLE_OK || responseCode != 200) {
+    throw std::runtime_error("client: HTTP request failed");
+  }
+
   tinyxml2::XMLDocument document;
   auto error = document.Parse(buffer.data(), buffer.size());
   if (error == tinyxml2::XML_CAN_NOT_CONVERT_TEXT) {

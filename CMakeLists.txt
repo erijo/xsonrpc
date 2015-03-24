@@ -5,6 +5,9 @@ project(xsonrpc)
 set(xsonrpc_version_major 0)
 set(xsonrpc_version_minor 1)
 
+add_definitions(
+  -DXSONRPC_VERSION="${xsonrpc_version_major}.${xsonrpc_version_minor}")
+
 # Compiler flags
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")

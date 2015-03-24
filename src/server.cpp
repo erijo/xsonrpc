@@ -114,6 +114,8 @@ void Server::HandleRequest(MHD_Connection* connection, void* connectionCls)
     MHD_RESPMEM_PERSISTENT);
 
   MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE, TEXT_XML);
+  MHD_add_response_header(response, MHD_HTTP_HEADER_SERVER,
+                          "xsonrpc/" XSONRPC_VERSION);
   MHD_queue_response(connection, MHD_HTTP_OK, response);
   MHD_destroy_response(response);
 }

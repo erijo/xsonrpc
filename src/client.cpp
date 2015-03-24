@@ -21,6 +21,7 @@
 
 #include <curl/curl.h>
 #include <curl/easy.h>
+#include <memory>
 #include <stdexcept>
 #include <tinyxml2.h>
 
@@ -40,7 +41,7 @@ namespace xsonrpc {
 void Client::GlobalInit()
 {
   if (curl_global_init(CURL_GLOBAL_DEFAULT) != CURLE_OK) {
-    throw std::runtime_error("client: Failed to initialize cURL");
+    throw std::runtime_error("client: failed to initialize cURL");
   }
 }
 
@@ -57,7 +58,7 @@ Client::Client(const std::string& host, unsigned short port,
   std::string url = "http://" + host + ":" + std::to_string(port) + uri;
   curl_easy_setopt(myHandle, CURLOPT_URL, url.c_str());
 
-  curl_easy_setopt(myHandle, CURLOPT_USERAGENT, "xsonrpc/0.1");
+  curl_easy_setopt(myHandle, CURLOPT_USERAGENT, "xsonrpc/" XSONRPC_VERSION);
   curl_easy_setopt(myHandle, CURLOPT_WRITEFUNCTION, &WriteCallback);
 }
 
@@ -76,9 +77,14 @@ Value Client::CallInternal(const std::string& methodName,
                    static_cast<curl_off_t>(printer.CStrSize() - 1));
   curl_easy_setopt(myHandle, CURLOPT_POSTFIELDS, printer.CStr());
 
+  std::unique_ptr<curl_slist, void(*)(curl_slist*)> headers(
+    curl_slist_append(NULL, "Content-Type: text/xml"), &curl_slist_free_all);
+  curl_easy_setopt(myHandle, CURLOPT_HTTPHEADER, headers.get());
+
   std::string buffer;
   curl_easy_setopt(myHandle, CURLOPT_WRITEDATA, static_cast<void*>(&buffer));
   auto res = curl_easy_perform(myHandle);
+
   if (res != CURLE_OK) {
     throw std::runtime_error("client: failed to perform cURL call");
   }

@@ -19,6 +19,7 @@
 #include "fault.h"
 #include "value.h"
 
+#include <ctime>
 #include <ostream>
 #include <string>
 #include <tinyxml2.h>
@@ -43,6 +44,14 @@ const char STRUCT_TAG[] = "struct";
 const char DATA_TAG[] = "data";
 const char MEMBER_TAG[] = "member";
 const char NAME_TAG[] = "name";
+
+const char DATE_TIME_FORMAT[] = "%Y%m%dT%T";
+
+std::string FormatIso8601DateTime(const tm& dt)
+{
+  char str[128];
+  return std::string(str, strftime(str, sizeof(str), DATE_TIME_FORMAT, &dt));
+}
 
 } // namespace
 
@@ -85,8 +94,17 @@ Value::Value(const tinyxml2::XMLElement* element)
   }
   else if (util::IsTag(*value, DATE_TIME_TAG)) {
     myType = Type::DATE_TIME;
-    // TODO: implement
-    throw InternalFault("datetime not supported");
+    if (!value->GetText()) {
+      throw InvalidXmlRpcFault("value is not a date/time");
+    }
+    DateTime dateTime;
+    memset(&dateTime, 0, sizeof(dateTime));
+    auto* res = strptime(value->GetText(), DATE_TIME_FORMAT, &dateTime);
+    if (!res || *res != '\0') {
+      throw InvalidXmlRpcFault("value is not a valid date/time");
+    }
+    dateTime.tm_isdst = -1;
+    as.myDateTime = new DateTime(dateTime);
   }
   else if (util::IsTag(*value, DOUBLE_TAG)) {
     myType = Type::DOUBLE;
@@ -141,6 +159,13 @@ Value::Value(Array value)
   as.myArray = new Array(std::move(value));
 }
 
+Value::Value(const DateTime& value)
+  : myType(Type::DATE_TIME)
+{
+  as.myDateTime = new DateTime(value);
+  as.myDateTime->tm_isdst = -1;
+}
+
 Value::Value(String value)
   : myType(Type::STRING)
 {
@@ -163,17 +188,20 @@ Value::Value(const Value& other)
     as(other.as)
 {
   switch (myType) {
-    case Type::ARRAY:
-      as.myArray = new Array(other.AsArray());
-      break;
     case Type::BASE_64:
     case Type::BOOLEAN:
-    case Type::DATE_TIME:
     case Type::DOUBLE:
     case Type::INTEGER_32:
     case Type::INTEGER_64:
     case Type::NIL:
-      break; // Nothing to do
+      break;
+
+    case Type::ARRAY:
+      as.myArray = new Array(other.AsArray());
+      break;
+    case Type::DATE_TIME:
+      as.myDateTime = new DateTime(other.AsDateTime());
+      break;
     case Type::STRING:
       as.myString = new String(other.AsString());
       break;
@@ -215,6 +243,14 @@ const bool& Value::AsBoolean() const
 {
   if (IsBoolean()) {
     return as.myBoolean;
+  }
+  throw InvalidParametersFault();
+}
+
+const Value::DateTime& Value::AsDateTime() const
+{
+  if (IsDateTime()) {
+    return *as.myDateTime;
   }
   throw InvalidParametersFault();
 }
@@ -316,7 +352,7 @@ void Value::Print(tinyxml2::XMLPrinter& printer) const
     case Type::DATE_TIME:
       compact = true;
       printer.OpenElement(DATE_TIME_TAG, compact);
-      // TODO: implement
+      printer.PushText(FormatIso8601DateTime(*as.myDateTime).c_str());
       printer.CloseElement(compact);
       break;
     case Type::DOUBLE:
@@ -373,6 +409,9 @@ void Value::Reset()
   if (IsArray()) {
     delete as.myArray;
   }
+  else if (IsDateTime()) {
+    delete as.myDateTime;
+  }
   else if (IsString()) {
     delete as.myString;
   }
@@ -405,7 +444,7 @@ std::ostream& operator<<(std::ostream& os, const Value& value)
       os << value.AsBoolean();
       break;
     case Value::Type::DATE_TIME:
-      // TODO:
+      os << FormatIso8601DateTime(value.AsDateTime());
       break;
     case Value::Type::DOUBLE:
       os << value.AsDouble();

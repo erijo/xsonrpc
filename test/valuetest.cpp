@@ -191,6 +191,62 @@ TEST_CASE("boolean")
   CHECK(ToXml(*value) == "<value><boolean>1</boolean></value>");
 }
 
+TEST_CASE("date time")
+{
+  std::unique_ptr<Value> value;
+
+  GIVEN("from constructor")
+  {
+    const time_t local = 1427883194;
+    value = std::unique_ptr<Value>{new Value(*localtime(&local))};
+  }
+
+  GIVEN("from xml")
+  {
+    value = FromXml("<dateTime.iso8601>20150401T12:13:14</dateTime.iso8601>");
+  }
+
+  // Type check
+  CHECK_FALSE(value->IsArray());
+  CHECK_FALSE(value->IsBase64());
+  CHECK_FALSE(value->IsBoolean());
+  CHECK(value->IsDateTime());
+  CHECK_FALSE(value->IsDouble());
+  CHECK_FALSE(value->IsInteger32());
+  CHECK_FALSE(value->IsInteger64());
+  CHECK_FALSE(value->IsNil());
+  CHECK_FALSE(value->IsString());
+  CHECK_FALSE(value->IsStruct());
+
+  // Getter
+  CHECK_THROWS_AS(value->AsArray(), InvalidParametersFault);
+  CHECK_THROWS_AS(value->AsBoolean(), InvalidParametersFault);
+  CHECK_NOTHROW(value->AsDateTime());
+  CHECK_THROWS_AS(value->AsDouble(), InvalidParametersFault);
+  CHECK_THROWS_AS(value->AsInteger32(), InvalidParametersFault);
+  CHECK_THROWS_AS(value->AsInteger64(), InvalidParametersFault);
+  CHECK_THROWS_AS(value->AsString(), InvalidParametersFault);
+  CHECK_THROWS_AS(value->AsStruct(), InvalidParametersFault);
+
+  CHECK_THROWS_AS((*value)[0], InvalidParametersFault);
+  CHECK_THROWS_AS((*value)["notthere"], InvalidParametersFault);
+
+  auto dt = value->AsDateTime();
+  CHECK(dt.tm_year == 2015 - 1900);
+  CHECK(dt.tm_mon == 4 - 1);
+  CHECK(dt.tm_mday == 1);
+  CHECK(dt.tm_hour == 12);
+  CHECK(dt.tm_min == 13);
+  CHECK(dt.tm_sec == 14);
+  CHECK(dt.tm_wday == 3);
+  CHECK(dt.tm_yday == 90);
+  CHECK(dt.tm_isdst == -1);
+
+  CHECK(ToXml(*value) ==
+        "<value><dateTime.iso8601>"
+        "20150401T12:13:14</dateTime.iso8601></value>");
+}
+
 TEST_CASE("double")
 {
   std::unique_ptr<Value> value;

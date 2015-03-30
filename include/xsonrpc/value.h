@@ -30,12 +30,15 @@ class XMLElement;
 class XMLPrinter;
 }
 
+struct tm;
+
 namespace xsonrpc {
 
 class Value
 {
 public:
   typedef std::vector<Value> Array;
+  typedef tm DateTime;
   typedef std::string String;
   typedef std::map<std::string, Value> Struct;
 
@@ -58,6 +61,7 @@ public:
   Value() : myType(Type::NIL) {}
   Value(Array value);
   Value(bool value) : myType(Type::BOOLEAN) { as.myBoolean = value; }
+  Value(const DateTime& value);
   Value(double value) : myType(Type::DOUBLE) { as.myDouble = value; }
   Value(int32_t value) : myType(Type::INTEGER_32) { as.myInteger32 = value; }
   Value(int64_t value) : myType(Type::INTEGER_64) { as.myInteger64 = value; }
@@ -113,6 +117,7 @@ public:
 
   const Array& AsArray() const;
   const bool& AsBoolean() const;
+  const DateTime& AsDateTime() const;
   const double& AsDouble() const;
   const int32_t& AsInteger32() const;
   const int64_t& AsInteger64() const;
@@ -138,6 +143,7 @@ private:
   {
     Array* myArray;
     bool myBoolean;
+    DateTime* myDateTime;
     double myDouble;
     int32_t myInteger32;
     int64_t myInteger64;
@@ -156,6 +162,12 @@ template<> inline
 const bool& Value::AsType<bool>() const
 {
   return AsBoolean();
+}
+
+template<> inline
+const Value::DateTime& Value::AsType<typename Value::DateTime>() const
+{
+  return AsDateTime();
 }
 
 template<> inline

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -eu	
+set -eu
 
 files="tinyxml2.h tinyxml2.cpp"
 baseurl="https://raw.github.com/leethomason/tinyxml2/master/"

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -eu	
+set -eu
 
 files=" LICENSE_1_0.txt integer_seq.h"
 baseurl="https://gitorious.org/redistd/integer_seq/raw/"

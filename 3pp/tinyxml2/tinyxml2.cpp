@@ -228,11 +228,19 @@ const char* StrPair::GetStr()
                         const int buflen = 10;
                         char buf[buflen] = { 0 };
                         int len = 0;
-                        p = const_cast<char*>( XMLUtil::GetCharacterRef( p, buf, &len ) );
-                        TIXMLASSERT( 0 <= len && len <= buflen );
-                        TIXMLASSERT( q + len <= p );
-                        memcpy( q, buf, len );
-                        q += len;
+                        char* adjusted = const_cast<char*>( XMLUtil::GetCharacterRef( p, buf, &len ) );
+                        if ( adjusted == 0 ) {
+                            *q = *p;
+                            ++p;
+                            ++q;
+                        }
+                        else {
+                            TIXMLASSERT( 0 <= len && len <= buflen );
+                            TIXMLASSERT( q + len <= adjusted );
+                            p = adjusted;
+                            memcpy( q, buf, len );
+                            q += len;
+                        }
                     }
                     else {
                         int i=0;
@@ -315,7 +323,7 @@ void XMLUtil::ConvertUTF32ToUTF8( unsigned long input, char* output, int* length
         *length = 4;
     }
     else {
-        *length = 0;    // This code won't covert this correctly anyway.
+        *length = 0;    // This code won't convert this correctly anyway.
         return;
     }
 
@@ -338,8 +346,9 @@ void XMLUtil::ConvertUTF32ToUTF8( unsigned long input, char* output, int* length
         case 1:
             --output;
             *output = (char)(input | FIRST_BYTE_MARK[*length]);
-        default:
             break;
+        default:
+            TIXMLASSERT( false );
     }
 }
 
@@ -374,18 +383,25 @@ const char* XMLUtil::GetCharacterRef( const char* p, char* value, int* length )
             --q;
 
             while ( *q != 'x' ) {
+                unsigned int digit = 0;
+
                 if ( *q >= '0' && *q <= '9' ) {
-                    ucs += mult * (*q - '0');
+                    digit = *q - '0';
                 }
                 else if ( *q >= 'a' && *q <= 'f' ) {
-                    ucs += mult * (*q - 'a' + 10);
+                    digit = *q - 'a' + 10;
                 }
                 else if ( *q >= 'A' && *q <= 'F' ) {
-                    ucs += mult * (*q - 'A' + 10 );
+                    digit = *q - 'A' + 10;
                 }
                 else {
                     return 0;
                 }
+                TIXMLASSERT( digit >= 0 && digit < 16);
+                TIXMLASSERT( digit == 0 || mult <= UINT_MAX / digit );
+                const unsigned int digitScaled = mult * digit;
+                TIXMLASSERT( ucs <= ULONG_MAX - digitScaled );
+                ucs += digitScaled;
                 TIXMLASSERT( mult <= UINT_MAX / 16 );
                 mult *= 16;
                 --q;
@@ -410,7 +426,12 @@ const char* XMLUtil::GetCharacterRef( const char* p, char* value, int* length )
 
             while ( *q != '#' ) {
                 if ( *q >= '0' && *q <= '9' ) {
-                    ucs += mult * (*q - '0');
+                    const unsigned int digit = *q - '0';
+                    TIXMLASSERT( digit >= 0 && digit < 10);
+                    TIXMLASSERT( digit == 0 || mult <= UINT_MAX / digit );
+                    const unsigned int digitScaled = mult * digit;
+                    TIXMLASSERT( ucs <= ULONG_MAX - digitScaled );
+                    ucs += digitScaled;
                 }
                 else {
                     return 0;
@@ -515,9 +536,13 @@ bool XMLUtil::ToDouble( const char* str, double* value )
 
 char* XMLDocument::Identify( char* p, XMLNode** node )
 {
+    TIXMLASSERT( node );
+    TIXMLASSERT( p );
     char* const start = p;
     p = XMLUtil::SkipWhiteSpace( p );
     if( !*p ) {
+        *node = 0;
+        TIXMLASSERT( p );
         return p;
     }
 
@@ -577,6 +602,8 @@ char* XMLDocument::Identify( char* p, XMLNode** node )
         p = start;	// Back it up, all the text counts.
     }
 
+    TIXMLASSERT( returnNode );
+    TIXMLASSERT( p );
     *node = returnNode;
     return p;
 }
@@ -844,7 +871,7 @@ char* XMLNode::ParseDeep( char* p, StrPair* parentEnd )
         XMLNode* node = 0;
 
         p = _document->Identify( p, &node );
-        if ( p == 0 || node == 0 ) {
+        if ( node == 0 ) {
             break;
         }
 
@@ -1852,6 +1879,9 @@ XMLError XMLDocument::SaveFile( const char* filename, bool compact )
 
 XMLError XMLDocument::SaveFile( FILE* fp, bool compact )
 {
+    // Clear any error from the last save, otherwise it will get reported
+    // for *this* call.
+    SetError( XML_NO_ERROR, 0, 0 );
     XMLPrinter stream( fp, compact );
     Print( &stream );
     return _errorID;
@@ -2270,8 +2300,11 @@ bool XMLPrinter::VisitEnter( const XMLDocument& doc )
 
 bool XMLPrinter::VisitEnter( const XMLElement& element, const XMLAttribute* attribute )
 {
-	const XMLElement*	parentElem = element.Parent()->ToElement();
-	bool		compactMode = parentElem ? CompactMode(*parentElem) : _compactMode;
+    const XMLElement* parentElem = NULL;
+    if (  element.Parent() ) {
+    	parentElem = element.Parent()->ToElement();
+    }
+    bool compactMode = parentElem ? CompactMode(*parentElem) : _compactMode;
     OpenElement( element.Name(), compactMode );
     while ( attribute ) {
         PushAttribute( attribute->Name(), attribute->Value() );

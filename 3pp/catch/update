@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -eu	
+set -eu
 
 files="LICENSE_1_0.txt single_include/catch.hpp"
 baseurl="https://raw.github.com/philsquared/Catch/master/"

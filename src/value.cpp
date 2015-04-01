@@ -82,9 +82,13 @@ Value::Value(const tinyxml2::XMLElement* element)
     as.myArray = new Array(std::move(array));
   }
   else if (util::IsTag(*value, BASE_64_TAG)) {
-    myType = Type::BASE_64;
-    // TODO: implement
-    throw InternalFault("base64 not supported");
+    myType = Type::BINARY;
+    auto text = value->GetText();
+    if (!text) {
+      throw InvalidXmlRpcFault("value is not base64");
+    }
+    auto binary = util::Base64Decode(text, strlen(text));
+    as.myBinary = new Binary(std::move(binary));
   }
   else if (util::IsTag(*value, BOOLEAN_TAG)) {
     myType = Type::BOOLEAN;
@@ -159,6 +163,12 @@ Value::Value(Array value)
   as.myArray = new Array(std::move(value));
 }
 
+Value::Value(Binary value)
+  : myType(Type::BINARY)
+{
+  as.myBinary = new Binary(std::move(value));
+}
+
 Value::Value(const DateTime& value)
   : myType(Type::DATE_TIME)
 {
@@ -188,7 +198,6 @@ Value::Value(const Value& other)
     as(other.as)
 {
   switch (myType) {
-    case Type::BASE_64:
     case Type::BOOLEAN:
     case Type::DOUBLE:
     case Type::INTEGER_32:
@@ -198,6 +207,9 @@ Value::Value(const Value& other)
 
     case Type::ARRAY:
       as.myArray = new Array(other.AsArray());
+      break;
+    case Type::BINARY:
+      as.myBinary = new Binary(other.AsBinary());
       break;
     case Type::DATE_TIME:
       as.myDateTime = new DateTime(other.AsDateTime());
@@ -235,6 +247,14 @@ const Value::Array& Value::AsArray() const
 {
   if (IsArray()) {
     return *as.myArray;
+  }
+  throw InvalidParametersFault();
+}
+
+const Value::Binary& Value::AsBinary() const
+{
+  if (IsBinary()) {
+    return *as.myBinary;
   }
   throw InvalidParametersFault();
 }
@@ -300,7 +320,7 @@ std::string Value::GetTypeName(Type type)
   switch (type) {
     case Type::ARRAY:
       return ARRAY_TAG;
-    case Type::BASE_64:
+    case Type::BINARY:
       return BASE_64_TAG;
     case Type::BOOLEAN:
       return BOOLEAN_TAG;
@@ -338,9 +358,9 @@ void Value::Print(tinyxml2::XMLPrinter& printer) const
       printer.CloseElement();
       break;
     }
-    case Type::BASE_64:
+    case Type::BINARY:
       printer.OpenElement(BASE_64_TAG);
-      // TODO: implement
+      printer.PushText(util::Base64Encode(*as.myBinary).c_str());
       printer.CloseElement();
       break;
     case Type::BOOLEAN:
@@ -406,17 +426,29 @@ void Value::Print(tinyxml2::XMLPrinter& printer) const
 
 void Value::Reset()
 {
-  if (IsArray()) {
-    delete as.myArray;
-  }
-  else if (IsDateTime()) {
-    delete as.myDateTime;
-  }
-  else if (IsString()) {
-    delete as.myString;
-  }
-  else if (IsStruct()) {
-    delete as.myStruct;
+  switch (myType) {
+    case Type::ARRAY:
+      delete as.myArray;
+      break;
+    case Type::BINARY:
+      delete as.myBinary;
+      break;
+    case Type::DATE_TIME:
+      delete as.myDateTime;
+      break;
+    case Type::STRING:
+      delete as.myString;
+      break;
+    case Type::STRUCT:
+      delete as.myStruct;
+      break;
+
+    case Type::BOOLEAN:
+    case Type::DOUBLE:
+    case Type::INTEGER_32:
+    case Type::INTEGER_64:
+    case Type::NIL:
+      break;
   }
 
   myType = Type::NIL;
@@ -437,8 +469,8 @@ std::ostream& operator<<(std::ostream& os, const Value& value)
       os << ']';
       break;
     }
-    case Value::Type::BASE_64:
-      // TODO:
+    case Value::Type::BINARY:
+      os << util::Base64Encode(value.AsBinary());
       break;
     case Value::Type::BOOLEAN:
       os << value.AsBoolean();

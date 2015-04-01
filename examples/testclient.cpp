@@ -38,6 +38,9 @@ int main()
   }
   std::cout << "add_array: " << client.Call("add_array", params) << "\n";
 
+  std::cout << "to_binary: " << client.Call("to_binary", "Hello World!")
+            << "\n";
+
   params.clear();
   {
     xsonrpc::Value::Array a;

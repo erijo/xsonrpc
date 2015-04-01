@@ -48,6 +48,7 @@ add_executable(unittest
   test/main.cpp
   test/requesttest.cpp
   test/responsetest.cpp
+  test/utiltest.cpp
   test/valuetest.cpp
 )
 target_link_libraries(unittest xsonrpc)

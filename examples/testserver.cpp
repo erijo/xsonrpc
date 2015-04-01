@@ -38,6 +38,11 @@ std::string Concat(const std::string& a, const std::string& b)
   return a + b;
 }
 
+xsonrpc::Value::Binary ToBinary(const std::string& s)
+{
+  return {s.begin(), s.end()};
+}
+
 xsonrpc::Value::Struct ToStruct(const xsonrpc::Value::Array& a)
 {
   xsonrpc::Value::Struct s;
@@ -55,6 +60,7 @@ int main()
   dispatcher.AddMethod("add", &Add);
   dispatcher.AddMethod("add_array", &AddArray);
   dispatcher.AddMethod("concat", &Concat);
+  dispatcher.AddMethod("to_binary", &ToBinary);
   dispatcher.AddMethod("to_struct", &ToStruct);
 
   server.Run();

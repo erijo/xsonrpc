@@ -18,6 +18,10 @@
 #ifndef XSONRPC_UTIL_H
 #define XSONRPC_UTIL_H
 
+#include <stdint.h>
+#include <string>
+#include <vector>
+
 namespace tinyxml2 {
 class XMLElement;
 }
@@ -28,7 +32,25 @@ namespace util {
 bool IsTag(const tinyxml2::XMLElement& element, const char* tag);
 bool HasEmptyText(const tinyxml2::XMLElement& element);
 
+inline std::string Base64Encode(const std::vector<uint8_t>& data);
+std::string Base64Encode(const uint8_t* data, size_t size);
+
+inline std::vector<uint8_t> Base64Decode(const std::string& str);
+std::vector<uint8_t> Base64Decode(const char* str, size_t size);
+
 } // namespace util
 } // namespace xsonrpc
+
+inline std::string xsonrpc::util::Base64Encode(
+  const std::vector<uint8_t>& data)
+{
+  return Base64Encode(data.data(), data.size());
+}
+
+inline std::vector<uint8_t> xsonrpc::util::Base64Decode(
+  const std::string& str)
+{
+  return Base64Decode(str.data(), str.size());
+}
 
 #endif

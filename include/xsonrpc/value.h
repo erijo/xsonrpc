@@ -38,6 +38,7 @@ class Value
 {
 public:
   typedef std::vector<Value> Array;
+  typedef std::vector<uint8_t> Binary;
   typedef tm DateTime;
   typedef std::string String;
   typedef std::map<std::string, Value> Struct;
@@ -45,7 +46,7 @@ public:
   enum class Type
   {
     ARRAY,
-    BASE_64,
+    BINARY,
     BOOLEAN,
     DATE_TIME,
     DOUBLE,
@@ -60,6 +61,7 @@ public:
 
   Value() : myType(Type::NIL) {}
   Value(Array value);
+  Value(Binary value);
   Value(bool value) : myType(Type::BOOLEAN) { as.myBoolean = value; }
   Value(const DateTime& value);
   Value(double value) : myType(Type::DOUBLE) { as.myDouble = value; }
@@ -105,7 +107,7 @@ public:
   Value& operator=(Value&& other) noexcept;
 
   bool IsArray() const { return myType == Type::ARRAY; }
-  bool IsBase64() const { return myType == Type::BASE_64; }
+  bool IsBinary() const { return myType == Type::BINARY; }
   bool IsBoolean() const { return myType == Type::BOOLEAN; }
   bool IsDateTime() const { return myType == Type::DATE_TIME; }
   bool IsDouble() const { return myType == Type::DOUBLE; }
@@ -116,6 +118,7 @@ public:
   bool IsStruct() const { return myType == Type::STRUCT; }
 
   const Array& AsArray() const;
+  const Binary& AsBinary() const;
   const bool& AsBoolean() const;
   const DateTime& AsDateTime() const;
   const double& AsDouble() const;
@@ -142,6 +145,7 @@ private:
   union
   {
     Array* myArray;
+    Binary* myBinary;
     bool myBoolean;
     DateTime* myDateTime;
     double myDouble;
@@ -156,6 +160,12 @@ template<> inline
 const Value::Array& Value::AsType<typename Value::Array>() const
 {
   return AsArray();
+}
+
+template<> inline
+const Value::Binary& Value::AsType<typename Value::Binary>() const
+{
+  return AsBinary();
 }
 
 template<> inline

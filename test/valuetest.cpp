@@ -59,7 +59,7 @@ TEST_CASE("nil")
 
   // Type check
   CHECK_FALSE(value->IsArray());
-  CHECK_FALSE(value->IsBase64());
+  CHECK_FALSE(value->IsBinary());
   CHECK_FALSE(value->IsBoolean());
   CHECK_FALSE(value->IsDateTime());
   CHECK_FALSE(value->IsDouble());
@@ -108,7 +108,7 @@ TEST_CASE("array")
 
   // Type check
   CHECK(value->IsArray());
-  CHECK_FALSE(value->IsBase64());
+  CHECK_FALSE(value->IsBinary());
   CHECK_FALSE(value->IsBoolean());
   CHECK_FALSE(value->IsDateTime());
   CHECK_FALSE(value->IsDouble());
@@ -148,6 +148,56 @@ TEST_CASE("array")
         "</value>\n");
 }
 
+TEST_CASE("binary")
+{
+  std::unique_ptr<Value> value;
+
+  GIVEN("from constructor")
+  {
+    Value::Binary binary{'h', 'e', 'l', 'l', 'o', '!'};
+    value = std::unique_ptr<Value>{new Value(std::move(binary))};
+  }
+
+  GIVEN("from xml")
+  {
+    value = FromXml("<base64>aGVsbG8h</base64>");
+  }
+
+  // Type check
+  CHECK_FALSE(value->IsArray());
+  CHECK(value->IsBinary());
+  CHECK(value->IsBinary());
+  CHECK_FALSE(value->IsBoolean());
+  CHECK_FALSE(value->IsDateTime());
+  CHECK_FALSE(value->IsDouble());
+  CHECK_FALSE(value->IsInteger32());
+  CHECK_FALSE(value->IsInteger64());
+  CHECK_FALSE(value->IsNil());
+  CHECK_FALSE(value->IsString());
+  CHECK_FALSE(value->IsStruct());
+
+  // Getter
+  CHECK_THROWS_AS(value->AsArray(), InvalidParametersFault);
+  CHECK_NOTHROW(value->AsBinary());
+  CHECK_THROWS_AS(value->AsBoolean(), InvalidParametersFault);
+  CHECK_THROWS_AS(value->AsDouble(), InvalidParametersFault);
+  CHECK_THROWS_AS(value->AsInteger32(), InvalidParametersFault);
+  CHECK_THROWS_AS(value->AsInteger64(), InvalidParametersFault);
+  CHECK_THROWS_AS(value->AsString(), InvalidParametersFault);
+  CHECK_THROWS_AS(value->AsStruct(), InvalidParametersFault);
+
+  CHECK_THROWS_AS((*value)[0], InvalidParametersFault);
+  CHECK_THROWS_AS((*value)["notthere"], InvalidParametersFault);
+
+  REQUIRE(value->AsBinary().size() == 6);
+  CHECK(value->AsBinary() == (Value::Binary{'h', 'e', 'l', 'l', 'o', '!'}));
+
+  CHECK(ToXml(*value) ==
+        "<value>\n"
+        "    <base64>aGVsbG8h</base64>\n"
+        "</value>\n");
+}
+
 TEST_CASE("boolean")
 {
   std::unique_ptr<Value> value;
@@ -164,7 +214,7 @@ TEST_CASE("boolean")
 
   // Type check
   CHECK_FALSE(value->IsArray());
-  CHECK_FALSE(value->IsBase64());
+  CHECK_FALSE(value->IsBinary());
   CHECK(value->IsBoolean());
   CHECK_FALSE(value->IsDateTime());
   CHECK_FALSE(value->IsDouble());
@@ -208,7 +258,7 @@ TEST_CASE("date time")
 
   // Type check
   CHECK_FALSE(value->IsArray());
-  CHECK_FALSE(value->IsBase64());
+  CHECK_FALSE(value->IsBinary());
   CHECK_FALSE(value->IsBoolean());
   CHECK(value->IsDateTime());
   CHECK_FALSE(value->IsDouble());
@@ -263,7 +313,7 @@ TEST_CASE("double")
 
   // Type check
   CHECK_FALSE(value->IsArray());
-  CHECK_FALSE(value->IsBase64());
+  CHECK_FALSE(value->IsBinary());
   CHECK_FALSE(value->IsBoolean());
   CHECK_FALSE(value->IsDateTime());
   CHECK(value->IsDouble());
@@ -306,7 +356,7 @@ TEST_CASE("integer 32")
 
   // Type check
   CHECK_FALSE(value->IsArray());
-  CHECK_FALSE(value->IsBase64());
+  CHECK_FALSE(value->IsBinary());
   CHECK_FALSE(value->IsBoolean());
   CHECK_FALSE(value->IsDateTime());
   CHECK_FALSE(value->IsDouble());
@@ -349,7 +399,7 @@ TEST_CASE("integer 64")
 
   // Type check
   CHECK_FALSE(value->IsArray());
-  CHECK_FALSE(value->IsBase64());
+  CHECK_FALSE(value->IsBinary());
   CHECK_FALSE(value->IsBoolean());
   CHECK_FALSE(value->IsDateTime());
   CHECK_FALSE(value->IsDouble());
@@ -398,7 +448,7 @@ TEST_CASE("string")
 
   // Type check
   CHECK_FALSE(value->IsArray());
-  CHECK_FALSE(value->IsBase64());
+  CHECK_FALSE(value->IsBinary());
   CHECK_FALSE(value->IsBoolean());
   CHECK_FALSE(value->IsDateTime());
   CHECK_FALSE(value->IsDouble());
@@ -461,7 +511,7 @@ TEST_CASE("struct")
 
   // Type check
   CHECK_FALSE(value->IsArray());
-  CHECK_FALSE(value->IsBase64());
+  CHECK_FALSE(value->IsBinary());
   CHECK_FALSE(value->IsBoolean());
   CHECK_FALSE(value->IsDateTime());
   CHECK_FALSE(value->IsDouble());

@@ -73,3 +73,8 @@ add_executable(testclient
   examples/testclient.cpp
 )
 target_link_libraries(testclient xsonrpc)
+
+add_executable(base64
+  examples/base64.cpp
+)
+target_link_libraries(base64 xsonrpc)

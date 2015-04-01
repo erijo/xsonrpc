@@ -50,6 +50,11 @@ TEST_CASE("encode base64")
         "dGhpcyBpcyBhIGxvbmdlciBzdHJpbmcgdGhhdCB"
         "3aWxsIG1ha2UgdGhlIHJlc3VsdCBsb25nZXIg\r\n"
         "dGhhbiA3NiBjaGFycw==");
+  CHECK(Base64Encode(
+          ToBinary("this gives one line and nothing more to "
+                   "see how it works!")) ==
+        "dGhpcyBnaXZlcyBvbmUgbGluZSBhbmQgbm90aGl"
+        "uZyBtb3JlIHRvIHNlZSBob3cgaXQgd29ya3Mh");
 }
 
 TEST_CASE("decode base64")

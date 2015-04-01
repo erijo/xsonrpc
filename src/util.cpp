@@ -83,7 +83,6 @@ std::string Base64Encode(const uint8_t* data, size_t size)
   static_assert(lineLength % 4 == 0, "invalid line length");
 
   const size_t encodedSize = 4 * ((size + 2) / 3);
-
   std::string str(encodedSize + 2 * (encodedSize / lineLength), '=');
 
   size_t in = 0;
@@ -105,11 +104,14 @@ std::string Base64Encode(const uint8_t* data, size_t size)
     if (in + 1 < size) {
       str[out++] = Base64Char1(data[in], data[in + 1]);
       str[out++] = Base64Char2(data[in + 1], 0);
+      out += 1;
     }
     else {
       str[out++] = Base64Char1(data[in], 0);
+      out += 2;
     }
   }
+  str.resize(out);
   return str;
 }
 

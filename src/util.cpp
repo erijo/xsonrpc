@@ -17,15 +17,16 @@
 
 #include "util.h"
 
+#include <cassert>
 #include <cstring>
 #include <tinyxml2.h>
 
 namespace {
 
-const char BASE_64_ALPHABET[64 + 1] =
+constexpr char BASE_64_ALPHABET[64 + 1] =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-const int8_t BASE_64_LUT[256] = {
+constexpr int8_t BASE_64_LUT[256] = {
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,
@@ -44,19 +45,19 @@ const int8_t BASE_64_LUT[256] = {
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
 };
 
-inline char Base64Char0(uint8_t byte0)
+inline constexpr char Base64Char0(uint8_t byte0) noexcept
 {
   return BASE_64_ALPHABET[byte0 >> 2];
 }
-inline char Base64Char1(uint8_t byte0, uint8_t byte1)
+inline constexpr char Base64Char1(uint8_t byte0, uint8_t byte1) noexcept
 {
   return BASE_64_ALPHABET[((byte0 << 4) | (byte1 >> 4)) & 0x3f];
 }
-inline char Base64Char2(uint8_t byte1, uint8_t byte2)
+inline constexpr char Base64Char2(uint8_t byte1, uint8_t byte2) noexcept
 {
   return BASE_64_ALPHABET[((byte1 << 2) | (byte2 >> 6)) & 0x3f];
 }
-inline char Base64Char3(uint8_t byte2)
+inline constexpr char Base64Char3(uint8_t byte2) noexcept
 {
   return BASE_64_ALPHABET[byte2 & 0x3f];
 }
@@ -82,8 +83,12 @@ std::string Base64Encode(const uint8_t* data, size_t size)
   const size_t lineLength = 76;
   static_assert(lineLength % 4 == 0, "invalid line length");
 
+  if (size == 0) {
+    return {};
+  }
+
   const size_t encodedSize = 4 * ((size + 2) / 3);
-  std::string str(encodedSize + 2 * (encodedSize / lineLength), '=');
+  std::string str(encodedSize + 2 * ((encodedSize - 1) / lineLength), '\0');
 
   size_t in = 0;
   size_t out = 0;
@@ -104,14 +109,15 @@ std::string Base64Encode(const uint8_t* data, size_t size)
     if (in + 1 < size) {
       str[out++] = Base64Char1(data[in], data[in + 1]);
       str[out++] = Base64Char2(data[in + 1], 0);
-      out += 1;
     }
     else {
       str[out++] = Base64Char1(data[in], 0);
-      out += 2;
+      str[out++] = '=';
     }
+    str[out++] = '=';
   }
-  str.resize(out);
+
+  assert(str.size() == out);
   return str;
 }
 
@@ -149,6 +155,7 @@ std::vector<uint8_t> Base64Decode(const char* str, size_t size)
     data[out++] = bits;
   }
 
+  assert(data.size() >= out);
   data.resize(out);
   return data;
 }

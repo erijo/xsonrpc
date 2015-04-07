@@ -17,8 +17,10 @@
 
 #include "server.h"
 
-#include <microhttpd.h>
 #include <sys/socket.h>
+#include <unistd.h>
+
+#include <microhttpd.h>
 #include <tinyxml2.h>
 #include <vector>
 

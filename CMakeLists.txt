@@ -1,19 +1,44 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.11)
 project(xsonrpc)
 
 # Version number
-set(xsonrpc_version_major 0)
-set(xsonrpc_version_minor 1)
+set(XSONRPC_VERSION_MAJOR 0)
+set(XSONRPC_VERSION_MINOR 1)
+set(XSONRPC_VERSION "${XSONRPC_VERSION_MAJOR}.${XSONRPC_VERSION_MINOR}")
 
-add_definitions(
-  -DXSONRPC_VERSION="${xsonrpc_version_major}.${xsonrpc_version_minor}")
+include(FindPackageMessage)
+
+# TinyXML-2
+find_path(TINYXML2_INCLUDE_DIR tinyxml2.h)
+mark_as_advanced(TINYXML2_INCLUDE_DIR)
+find_library(TINYXML2_LIBRARY tinyxml2)
+mark_as_advanced(TINYXML2_LIBRARY)
+
+if (TINYXML2_INCLUDE_DIR AND TINYXML2_LIBRARY)
+  set(TINYXML2_FOUND ON)
+  find_package_message(TINYXML2 "Found TinyXML-2: ${TINYXML2_LIBRARY}"
+    "[${TINYXML2_LIBRARY}][${TINYXML2_INCLUDE_DIR}]")
+else()
+  set(TINYXML2_SOURCE "${PROJECT_SOURCE_DIR}/3pp/tinyxml2/tinyxml2.cpp")
+  set(TINYXML2_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/3pp/tinyxml2")
+endif()
+
+# libmicrohttpd
+find_path(MICROHTTPD_INCLUDE_DIR microhttpd.h)
+mark_as_advanced(MICROHTTPD_INCLUDE_DIR)
+find_library(MICROHTTPD_LIBRARY microhttpd)
+mark_as_advanced(MICROHTTPD_LIBRARY)
+
+if (NOT MICROHTTPD_INCLUDE_DIR OR NOT MICROHTTPD_LIBRARY)
+  message(SEND_ERROR "Required library microhttpd not found")
+endif()
+
+# cURL
+find_package(CURL REQUIRED)
 
 # Compiler flags
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-
-# tinyxml2 (TODO: use installed if available)
-include_directories("3pp/tinyxml2")
 
 # integer_sequence for c++11 compiler
 include_directories("3pp/integer_seq")
@@ -22,59 +47,11 @@ include_directories("3pp/integer_seq")
 include_directories("include/xsonrpc")
 
 # Main library
-add_library(xsonrpc SHARED
-  3pp/tinyxml2/tinyxml2.cpp
-  src/client.cpp
-  src/dispatcher.cpp
-  src/fault.cpp
-  src/request.cpp
-  src/response.cpp
-  src/server.cpp
-  src/util.cpp
-  src/value.cpp
-)
-
-# TODO: detect microhttpd
-target_link_libraries(xsonrpc microhttpd)
-
-# TODO: detect cURL
-target_link_libraries(xsonrpc curl)
+add_subdirectory("src")
 
 # Unit tests
 enable_testing()
-include_directories("3pp/catch")
-add_executable(unittest
-  test/dispatchertest.cpp
-  test/main.cpp
-  test/requesttest.cpp
-  test/responsetest.cpp
-  test/utiltest.cpp
-  test/valuetest.cpp
-)
-target_link_libraries(unittest xsonrpc)
-add_test(NAME unittest COMMAND unittest)
-
-set(unittest_stamp
-  "${CMAKE_CURRENT_BINARY_DIR}/unittest.stamp")
-add_custom_command(OUTPUT "${unittest_stamp}"
-  COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-  COMMAND ${CMAKE_COMMAND} -E touch "${unittest_stamp}"
-  COMMENT "Running unit test"
-  DEPENDS unittest)
-add_custom_target(unittest_run ALL DEPENDS "${unittest_stamp}")
+add_subdirectory("test")
 
 # Examples
-add_executable(testserver
-  examples/testserver.cpp
-)
-target_link_libraries(testserver xsonrpc)
-
-add_executable(testclient
-  examples/testclient.cpp
-)
-target_link_libraries(testclient xsonrpc)
-
-add_executable(base64
-  examples/base64.cpp
-)
-target_link_libraries(base64 xsonrpc)
+add_subdirectory("examples" EXCLUDE_FROM_ALL)

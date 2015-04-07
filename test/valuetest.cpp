@@ -247,8 +247,8 @@ TEST_CASE("date time")
 
   GIVEN("from constructor")
   {
-    const time_t local = 1427883194;
-    value = std::unique_ptr<Value>{new Value(*localtime(&local))};
+    const time_t local = 1427890394;
+    value = std::unique_ptr<Value>{new Value(*gmtime(&local))};
   }
 
   GIVEN("from xml")

@@ -5,8 +5,9 @@ compiler:
   - clang
 
 before_install:
+  - sudo add-apt-repository ppa:kalakris/cmake -y
   - sudo apt-get update -qq
-  - sudo apt-get install -y cmake libcurl-dev libmicrohttpd-dev libtinyxml2-dev
+  - sudo apt-get install -y cmake libcurl4-gnutls-dev libmicrohttpd-dev
 
 before_script:
   - mkdir build

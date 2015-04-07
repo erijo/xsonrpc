@@ -6,6 +6,7 @@ set(XSONRPC_VERSION_MAJOR 0)
 set(XSONRPC_VERSION_MINOR 1)
 set(XSONRPC_VERSION "${XSONRPC_VERSION_MAJOR}.${XSONRPC_VERSION_MINOR}")
 
+include(CheckCXXCompilerFlag)
 include(FindPackageMessage)
 
 # TinyXML-2
@@ -37,11 +38,31 @@ endif()
 find_package(CURL REQUIRED)
 
 # Compiler flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+check_cxx_compiler_flag(-Wall COMPILER_SUPPORTS_WALL)
+if (COMPILER_SUPPORTS_WALL)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+endif()
+check_cxx_compiler_flag(-Wextra COMPILER_SUPPORTS_WEXTRA)
+if (COMPILER_SUPPORTS_WEXTRA)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")
+endif()
+
+check_cxx_compiler_flag(-std=c++14 COMPILER_SUPPORTS_CXX14)
+if (NOT COMPILER_SUPPORTS_CXX14)
+  check_cxx_compiler_flag(-std=c++11 COMPILER_SUPPORTS_CXX11)
+endif()
+if (COMPILER_SUPPORTS_CXX14)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+elseif (COMPILER_SUPPORTS_CXX11)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+else()
+  message(SEND_ERROR "Compiler does not support C++11")
+endif()
 
 # integer_sequence for c++11 compiler
-include_directories("3pp/integer_seq")
+if (NOT COMPILER_SUPPORTS_CXX14)
+  include_directories("3pp/integer_seq")
+endif()
 
 # Public headers
 include_directories("include/xsonrpc")

@@ -133,7 +133,7 @@ int Server::AccessHandlerCallback(
 
 int Server::AccessHandler(
   MHD_Connection* connection,
-  const char* url, const char* method, const char* version,
+  const char* url, const char* method, const char* /*version*/,
   const char* uploadData, size_t* uploadDataSize,
   void** connectionCls)
 {
@@ -188,8 +188,8 @@ void Server::RequestCompletedCallback(
 }
 
 void Server::OnRequestCompleted(
-  MHD_Connection* connection, void** connectionCls,
-  int requestTerminationCode)
+  MHD_Connection* /*connection*/, void** connectionCls,
+  int /*requestTerminationCode*/)
 {
   delete static_cast<ConnectionInfo*>(*connectionCls);
 }

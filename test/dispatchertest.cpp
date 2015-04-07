@@ -79,7 +79,7 @@ TEST_CASE("dispatcher")
   GIVEN("lambda")
   {
     dispatcher.AddMethod("test",
-                         [](const Request::Parameters& params)
+                         [](const Request::Parameters& /*params*/)
                          {
                            return Value(true);
                          });

@@ -17,6 +17,8 @@
 
 #include "../src/util.h"
 
+#include <cassert>
+#include <cstring>
 #include <fcntl.h>
 #include <iostream>
 #include <memory>
@@ -26,21 +28,50 @@
 
 int main(int argc, char** argv)
 {
-  if (argc != 2) {
+  if (argc != 3) {
+    std::cerr << "Usage: " << argv[0] << " -e|-d|-v <FILE>\n";
     return 1;
   }
 
-  int fd = open(argv[1], O_RDONLY);
+  if (argv[1][0] != '-' || argv[1][1] == '\0' || argv[1][2] != '\0') {
+    return 1;
+  }
+
+  const char flag = argv[1][1];
+  const bool verify = flag == 'v';
+  const bool encode = verify || flag == 'e';
+  const bool decode = flag == 'd';
+  if (!encode && !decode) {
+    return 1;
+  }
+
+  int fd = open(argv[2], O_RDONLY);
   if (fd == -1) {
     return 1;
   }
 
-  const size_t size = 28671;
+  const size_t size = encode ? 28671 : 30030;
   std::unique_ptr<uint8_t[]> buffer(new uint8_t[size]);
 
   ssize_t res;
   while ((res = read(fd, buffer.get(), size)) > 0) {
-    std::cout << xsonrpc::util::Base64Encode(buffer.get(), res) << "\r\n";
+    if (encode) {
+      auto str = xsonrpc::util::Base64Encode(buffer.get(), res);
+      if (!verify) {
+        std::cout << str << "\r\n";
+      }
+      else {
+        auto binary = xsonrpc::util::Base64Decode(str);
+        assert(binary.size() == static_cast<size_t>(res));
+        assert(memcmp(buffer.get(), binary.data(), res) == 0);
+      }
+    }
+    else {
+      auto binary = xsonrpc::util::Base64Decode(
+        reinterpret_cast<const char*>(buffer.get()), res);
+      std::cout.write(
+        reinterpret_cast<const char*>(binary.data()), binary.size());
+    }
   }
 
   close(fd);

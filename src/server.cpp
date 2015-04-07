@@ -18,6 +18,7 @@
 #include "server.h"
 
 #include <microhttpd.h>
+#include <sys/socket.h>
 #include <tinyxml2.h>
 #include <vector>
 
@@ -45,7 +46,11 @@ Server::Server(unsigned short port, std::string uri)
   : myUri(std::move(uri))
 {
   myDaemon = MHD_start_daemon(
+#if MHD_VERSION >= 0x00093100
     MHD_USE_EPOLL_LINUX_ONLY,
+#else
+    MHD_NO_FLAG,
+#endif
     port, NULL, NULL, &Server::AccessHandlerCallback, this,
     MHD_OPTION_NOTIFY_COMPLETED, &Server::RequestCompletedCallback, this,
     MHD_OPTION_END);
@@ -68,12 +73,16 @@ void Server::Run()
 
 int Server::GetFileDescriptor()
 {
+#if MHD_VERSION >= 0x00093100
   auto info = MHD_get_daemon_info(
     myDaemon, MHD_DAEMON_INFO_EPOLL_FD_LINUX_ONLY);
   if (!info || info->listen_fd == -1) {
     throw std::runtime_error("server: could not get file descriptor");
   }
   return info->listen_fd;
+#else
+  throw std::runtime_error("server: could not get file descriptor");
+#endif
 }
 
 void Server::OnReadableFileDescriptor()
@@ -108,10 +117,17 @@ void Server::HandleRequest(MHD_Connection* connection, void* connectionCls)
     Response(ex).Print(info->Printer);
   }
 
+#if MHD_VERSION >= 0x00090500
   auto response = MHD_create_response_from_buffer(
     info->Printer.CStrSize() - 1,
     const_cast<char*>(info->Printer.CStr()),
     MHD_RESPMEM_PERSISTENT);
+#else
+  auto response = MHD_create_response_from_data(
+    info->Printer.CStrSize() - 1,
+    const_cast<char*>(info->Printer.CStr()),
+    false, false);
+#endif
 
   MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE, TEXT_XML);
   MHD_add_response_header(response, MHD_HTTP_HEADER_SERVER,

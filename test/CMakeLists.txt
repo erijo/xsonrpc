@@ -8,6 +8,8 @@ add_executable(unittest
 )
 
 target_link_libraries(unittest xsonrpc)
+target_include_directories(unittest PRIVATE
+  "${PROJECT_SOURCE_DIR}/include/xsonrpc")
 target_include_directories(unittest PRIVATE ${TINYXML2_INCLUDE_DIR})
 
 # Catch (test framework)

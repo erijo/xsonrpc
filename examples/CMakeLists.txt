@@ -3,6 +3,8 @@ project(xsonrpc_examples)
 
 set(examples)
 
+include_directories(BEFORE ${XSONRPC_INCLUDE_DIR})
+
 add_executable(testserver testserver.cpp)
 target_link_libraries(testserver xsonrpc)
 list(APPEND examples testserver)

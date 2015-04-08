@@ -63,9 +63,12 @@ endif()
 if (NOT COMPILER_SUPPORTS_CXX14)
   include_directories("3pp/integer_seq")
 endif()
+install(FILES "3pp/integer_seq/integer_seq.h" DESTINATION "include/xsonrpc")
 
 # Public headers
-include_directories("include/xsonrpc")
+set(XSONRPC_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
+install(DIRECTORY "include/xsonrpc" DESTINATION "include"
+  FILES_MATCHING PATTERN "*.h")
 
 # Main library
 add_subdirectory("src")

@@ -11,6 +11,11 @@ add_library(xsonrpc SHARED
   value.cpp
 )
 
+install(TARGETS xsonrpc LIBRARY DESTINATION "lib")
+
+target_include_directories(xsonrpc BEFORE PRIVATE
+  "${PROJECT_SOURCE_DIR}/include/xsonrpc")
+
 # TinyXML-2
 target_include_directories(xsonrpc PRIVATE ${TINYXML2_INCLUDE_DIR})
 if (TINYXML2_FOUND)

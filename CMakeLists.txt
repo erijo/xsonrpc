@@ -6,6 +6,10 @@ set(XSONRPC_VERSION_MAJOR 0)
 set(XSONRPC_VERSION_MINOR 1)
 set(XSONRPC_VERSION "${XSONRPC_VERSION_MAJOR}.${XSONRPC_VERSION_MINOR}")
 
+# Options
+option(BUILD_EXAMPLES "Build xsonrpc examples" OFF)
+option(BUILD_TESTS "Build xsonrpc unit tests" ON)
+
 include(CheckCXXCompilerFlag)
 include(FindPackageMessage)
 
@@ -74,8 +78,14 @@ install(DIRECTORY "include/xsonrpc" DESTINATION "include"
 add_subdirectory("src")
 
 # Unit tests
-enable_testing()
-add_subdirectory("test")
+if (BUILD_TESTS)
+  enable_testing()
+  add_subdirectory("test")
+endif()
 
 # Examples
-add_subdirectory("examples" EXCLUDE_FROM_ALL)
+if (BUILD_EXAMPLES)
+  add_subdirectory("examples")
+else()
+  add_subdirectory("examples" EXCLUDE_FROM_ALL)
+endif()

@@ -500,7 +500,7 @@ std::ostream& operator<<(std::ostream& os, const Value& value)
         if (it != s.begin()) {
           os << ", ";
         }
-        os << '"' << it->first << "\": " << it->second;
+        os << it->first << ": " << it->second;
       }
       os << '}';
       break;

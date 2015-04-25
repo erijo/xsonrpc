@@ -44,11 +44,8 @@ public:
   template<typename FirstType,
            typename... RestTypes>
   typename std::enable_if<
-    !std::is_same<
-      typename std::remove_cv<
-        typename std::remove_reference<FirstType>::type
-        >::type,
-      Request::Parameters>::value,
+    !std::is_same<typename std::decay<FirstType>::type,
+                  Request::Parameters>::value,
     Value>::type
   Call(const std::string& methodName, FirstType&& first,
        RestTypes&&... rest)

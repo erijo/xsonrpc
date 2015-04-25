@@ -92,8 +92,10 @@ Value Dispatcher::SystemMulticall(const Request::Parameters& parameters) const
       throw InternalFault("Recursive multicall not allowed");
     }
     try {
-      auto retval = Invoke(call[METHOD_NAME].AsString(),
-                           call[PARAMS].AsArray());
+      auto& array = call[PARAMS].AsArray();
+      Request::Parameters callParams(array.begin(), array.end());
+      auto retval = Invoke(call[METHOD_NAME].AsString(), callParams);
+
       if (retval.IsFault()) {
         result.push_back(std::move(retval.GetResult()));
       }

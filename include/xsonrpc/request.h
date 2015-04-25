@@ -20,8 +20,8 @@
 
 #include "value.h"
 
+#include <deque>
 #include <string>
-#include <vector>
 
 namespace tinyxml2 {
 class XMLElement;
@@ -33,7 +33,7 @@ namespace xsonrpc {
 class Request
 {
 public:
-  typedef std::vector<Value> Parameters;
+  typedef std::deque<Value> Parameters;
 
   explicit Request(const tinyxml2::XMLElement* root);
 

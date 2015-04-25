@@ -116,7 +116,7 @@ TEST_CASE("dispatcher multicall")
   dispatcher.AddMethod("test", &TestMethodBool);
   dispatcher.AddMethod("foobar", &TestMethod);
 
-  Value::Array parameters;
+  Value::Array args;
 
   {
     Value::Array params;
@@ -127,7 +127,7 @@ TEST_CASE("dispatcher multicall")
     call["methodName"] = "foobar";
     call["params"] = std::move(params);
 
-    parameters.push_back(std::move(call));
+    args.push_back(std::move(call));
   }
 
   {
@@ -138,7 +138,7 @@ TEST_CASE("dispatcher multicall")
     call["methodName"] = "nosuchmethod";
     call["params"] = std::move(params);
 
-    parameters.push_back(std::move(call));
+    args.push_back(std::move(call));
   }
 
   {
@@ -148,11 +148,13 @@ TEST_CASE("dispatcher multicall")
     call["methodName"] = "test";
     call["params"] = std::move(params);
 
-    parameters.push_back(std::move(call));
+    args.push_back(std::move(call));
   }
 
-  auto response = dispatcher.Invoke(
-    "system.multicall", Value::Array{std::move(parameters)});
+  Request::Parameters parameters;
+  parameters.push_back(std::move(args));
+
+  auto response = dispatcher.Invoke("system.multicall", parameters);
   REQUIRE_FALSE(response.IsFault());
 
   auto& value = response.GetResult();

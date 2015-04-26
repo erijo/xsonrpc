@@ -31,10 +31,71 @@ Value TestMethod(const Request::Parameters& params)
   return Value(params[0]);
 }
 
-bool TestMethodBool()
+bool TestMethodBool(bool value)
 {
-  return true;
+  return value;
 }
+
+bool TestMethodValue(const Value& value)
+{
+  return value.AsBoolean();
+}
+
+class Test
+{
+public:
+  static Value StaticMethod(const Request::Parameters& params)
+  {
+    return Value(params[0]);
+  }
+  static bool StaticMethodBool(bool value)
+  {
+    return value;
+  }
+  static Value StaticMethodValue(const Value& value)
+  {
+    return Value(value);
+  }
+
+  bool operator()(bool value)
+  {
+    return value;
+  }
+
+  Value Method(const Request::Parameters& params)
+  {
+    return Value(params[0]);
+  }
+  Value MethodConst(const Request::Parameters& params) const
+  {
+    return Value(params[0]);
+  }
+  bool MethodBool(bool value)
+  {
+    return value;
+  }
+  bool MethodBoolConst(bool value) const
+  {
+    return value;
+  }
+  bool MethodValue(const Value& value)
+  {
+    return value.AsBoolean();
+  }
+  bool MethodValueConst(const Value& value) const
+  {
+    return value.AsBoolean();
+  }
+};
+
+class Test2
+{
+public:
+  bool operator()(const Value& value)
+  {
+    return value.AsBoolean();
+  }
+};
 
 } // namespace
 
@@ -70,34 +131,90 @@ TEST_CASE("method wrapper")
 TEST_CASE("dispatcher")
 {
   Dispatcher dispatcher;
+  Test test;
+  Test2 test2;
 
-  GIVEN("regular function")
+  GIVEN("function")
   {
     dispatcher.AddMethod("test", &TestMethod);
+  }
+  GIVEN("function with regular types")
+  {
+    dispatcher.AddMethod("test", &TestMethodBool);
+  }
+  GIVEN("function with value type")
+  {
+    dispatcher.AddMethod("test", &TestMethodValue);
   }
 
   GIVEN("lambda")
   {
     dispatcher.AddMethod("test",
-                         [](const Request::Parameters& /*params*/)
+                         [](const Request::Parameters& params)
                          {
-                           return Value(true);
+                           return Value(params[0]);
                          });
   }
-
-  GIVEN("function with regular types")
-  {
-    dispatcher.AddMethod("test", &TestMethodBool);
-  }
-
   GIVEN("lambda with regular types")
   {
+    dispatcher.AddMethod("test", [](bool value) { return value; });
+  }
+  GIVEN("lambda with value type")
+  {
     dispatcher.AddMethod("test",
-                         std::function<bool()>([]() { return true; }));
+                         [](const Value& value) { return Value(value); });
+  }
+
+  GIVEN("static method")
+  {
+    dispatcher.AddMethod("test", &Test::StaticMethod);
+  }
+  GIVEN("static method with regular types")
+  {
+    dispatcher.AddMethod("test", &Test::StaticMethodBool);
+  }
+  GIVEN("static method with value type")
+  {
+    dispatcher.AddMethod("test", &Test::StaticMethodValue);
+  }
+
+  GIVEN("method")
+  {
+    dispatcher.AddMethod("test", &Test::Method, test);
+  }
+  GIVEN("const method")
+  {
+    dispatcher.AddMethod("test", &Test::MethodConst, test);
+  }
+  GIVEN("method with regular types")
+  {
+    dispatcher.AddMethod("test", &Test::MethodBool, test);
+  }
+  GIVEN("const method with regular types")
+  {
+    dispatcher.AddMethod("test", &Test::MethodBoolConst, test);
+  }
+  GIVEN("method with value type")
+  {
+    dispatcher.AddMethod("test", &Test::MethodValue, test);
+  }
+  GIVEN("const method with value type")
+  {
+    dispatcher.AddMethod("test", &Test::MethodValueConst, test);
+  }
+
+  GIVEN("functor")
+  {
+    dispatcher.AddMethod("test", test);
+  }
+  GIVEN("function with value type")
+  {
+    dispatcher.AddMethod("test", test2);
   }
 
   {
-    auto response = dispatcher.Invoke("test", {});
+    auto response = dispatcher.Invoke("test", {true});
+    CAPTURE(response.GetResult());
     CHECK_FALSE(response.IsFault());
     CHECK(response.GetResult().AsBoolean());
   }
@@ -105,7 +222,7 @@ TEST_CASE("dispatcher")
   dispatcher.RemoveMethod("test");
 
   {
-    auto response = dispatcher.Invoke("test", {});
+    auto response = dispatcher.Invoke("test", {true});
     CHECK(response.IsFault());
   }
 }
@@ -143,6 +260,7 @@ TEST_CASE("dispatcher multicall")
 
   {
     Value::Array params;
+    params.emplace_back(true);
 
     Value::Struct call;
     call["methodName"] = "test";
@@ -155,6 +273,7 @@ TEST_CASE("dispatcher multicall")
   parameters.push_back(std::move(args));
 
   auto response = dispatcher.Invoke("system.multicall", parameters);
+  CAPTURE(response.GetResult());
   REQUIRE_FALSE(response.IsFault());
 
   auto& value = response.GetResult();

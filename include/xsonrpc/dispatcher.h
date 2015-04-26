@@ -73,6 +73,42 @@ private:
   std::vector<std::vector<Value::Type>> mySignatures;
 };
 
+template<typename> struct ToStdFunction;
+
+template<typename ReturnType, typename... ParameterTypes>
+struct ToStdFunction<ReturnType(*)(ParameterTypes...)>
+{
+  typedef std::function<ReturnType(ParameterTypes...)> Type;
+};
+
+template<typename ReturnType, typename T, typename... ParameterTypes>
+struct ToStdFunction<ReturnType(T::*)(ParameterTypes...)>
+{
+  typedef std::function<ReturnType(ParameterTypes...)> Type;
+};
+
+template<typename ReturnType, typename T, typename... ParameterTypes>
+struct ToStdFunction<ReturnType(T::*)(ParameterTypes...) const>
+{
+  typedef std::function<ReturnType(ParameterTypes...)> Type;
+};
+
+template<typename MethodType, bool isClass>
+struct StdFunction {};
+
+template<typename MethodType>
+struct StdFunction<MethodType, false>
+{
+  typedef typename ToStdFunction<MethodType>::Type Type;
+};
+
+template<typename MethodType>
+struct StdFunction<MethodType, true>
+{
+  typedef typename ToStdFunction<
+    decltype(&MethodType::operator())>::Type Type;
+};
+
 class Dispatcher
 {
 public:
@@ -81,28 +117,64 @@ public:
   MethodWrapper& AddMethod(
     std::string name, MethodWrapper::Method method);
 
-  template<typename ReturnType, typename... ParameterTypes>
-  typename std::enable_if<!std::is_same<ReturnType, Value>::value,
-                          MethodWrapper>::type&
-  AddMethod(std::string name,
-            std::function<ReturnType(ParameterTypes...)> method)
+  template<typename MethodType>
+  typename std::enable_if<
+    !std::is_convertible<MethodType, MethodWrapper::Method>::value
+    && !std::is_member_pointer<MethodType>::value,
+    MethodWrapper>::type&
+  AddMethod(std::string name, MethodType method)
   {
-    return AddMethodInternal(
-      std::move(name),
-      std::move(method),
-      std::index_sequence_for<ParameterTypes...>{});
+    static_assert(!std::is_bind_expression<MethodType>::value,
+                  "Use AddMethod with 3 arguments to add member method");
+    typename StdFunction<MethodType, std::is_class<MethodType>::value>::Type
+      function(std::move(method));
+    return AddMethodInternal(std::move(name), std::move(function));
   }
 
-  template<typename ReturnType, typename... ParameterTypes>
-  typename std::enable_if<!std::is_same<ReturnType, Value>::value,
-                          MethodWrapper>::type&
-  AddMethod(std::string name,
-            ReturnType (*function)(ParameterTypes...))
+  template<typename T>
+  MethodWrapper& AddMethod(std::string name,
+                           Value(T::*method)(const Request::Parameters&),
+                           T& instance)
   {
-    return AddMethodInternal(
-      std::move(name),
-      std::function<ReturnType(ParameterTypes...)>(function),
-      std::index_sequence_for<ParameterTypes...>{});
+    return AddMethod(std::move(name),
+                     std::bind(method, &instance, std::placeholders::_1));
+  }
+
+  template<typename T>
+  MethodWrapper& AddMethod(std::string name,
+                           Value(T::*method)(const Request::Parameters&) const,
+                           T& instance)
+  {
+    return AddMethod(std::move(name),
+                     std::bind(method, &instance, std::placeholders::_1));
+  }
+
+  template<typename ReturnType, typename T, typename... ParameterTypes>
+  MethodWrapper& AddMethod(std::string name,
+                           ReturnType(T::*method)(ParameterTypes...),
+                           T& instance)
+  {
+    T* ptr = &instance;
+    std::function<ReturnType(ParameterTypes...)> function =
+      [method,ptr] (ParameterTypes&&... params) -> ReturnType
+      {
+        return (*ptr.*method)(std::forward<ParameterTypes>(params)...);
+      };
+    return AddMethodInternal(std::move(name), std::move(function));
+  }
+
+  template<typename ReturnType, typename T, typename... ParameterTypes>
+  MethodWrapper& AddMethod(std::string name,
+                           ReturnType(T::*method)(ParameterTypes...) const,
+                           T& instance)
+  {
+    T* ptr = &instance;
+    std::function<ReturnType(ParameterTypes...)> function =
+      [method,ptr] (ParameterTypes&&... params) -> ReturnType
+      {
+        return (*ptr.*method)(std::forward<ParameterTypes>(params)...);
+      };
+    return AddMethodInternal(std::move(name), std::move(function));
   }
 
   void RemoveMethod(const std::string& name);
@@ -111,26 +183,33 @@ public:
                   const Request::Parameters& parameters) const;
 
 private:
+  template<typename ReturnType, typename... ParameterTypes>
+  MethodWrapper& AddMethodInternal(
+    std::string name,
+    std::function<ReturnType(ParameterTypes...)> method)
+  {
+    return AddMethodInternal(std::move(name), std::move(method),
+                             std::index_sequence_for<ParameterTypes...>{});
+  }
+
   template<typename ReturnType, typename... ParameterTypes,
            std::size_t... index>
   MethodWrapper& AddMethodInternal(
-    std::string name, std::function<ReturnType(ParameterTypes...)> method,
+    std::string name,
+    std::function<ReturnType(ParameterTypes...)> method,
     std::index_sequence<index...>)
   {
-    return AddMethod(
-      std::move(name),
+    MethodWrapper::Method realMethod =
       [method] (const Request::Parameters& params) -> Value
       {
         if (params.size() != sizeof...(ParameterTypes)) {
           throw InvalidParametersFault();
         }
         return method(
-          params[index].AsType<
-          typename std::remove_cv<
-          typename std::remove_reference<ParameterTypes>::type
-          >::type
-          >()...);
-      });
+          params[index]
+          .AsType<typename std::decay<ParameterTypes>::type>()...);
+      };
+    return AddMethod(std::move(name), std::move(realMethod));
   }
 
   Value SystemMulticall(const Request::Parameters& parameters) const;

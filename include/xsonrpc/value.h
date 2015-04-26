@@ -210,6 +210,12 @@ const Value::Struct& Value::AsType<typename Value::Struct>() const
   return AsStruct();
 }
 
+template<> inline
+const Value& Value::AsType<Value>() const
+{
+  return *this;
+}
+
 inline const Value& Value::operator[](Array::size_type i) const
 {
   return AsArray().at(i);

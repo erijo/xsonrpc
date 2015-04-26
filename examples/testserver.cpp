@@ -21,16 +21,20 @@
 #include <poll.h>
 #include <string>
 
-int Add(int a, int b)
+class Math
 {
-  return a + b;
-}
+public:
+  int Add(int a, int b)
+  {
+    return a + b;
+  }
 
-int64_t AddArray(const xsonrpc::Value::Array& a)
-{
-  return std::accumulate(a.begin(), a.end(), int64_t(0),
-                         [](const int64_t& a, const xsonrpc::Value& b)
-                         { return a + b.AsInteger32(); });
+  int64_t AddArray(const xsonrpc::Value::Array& a)
+  {
+    return std::accumulate(a.begin(), a.end(), int64_t(0),
+                           [](const int64_t& a, const xsonrpc::Value& b)
+                           { return a + b.AsInteger32(); });
+  };
 };
 
 std::string Concat(const std::string& a, const std::string& b)
@@ -41,6 +45,11 @@ std::string Concat(const std::string& a, const std::string& b)
 xsonrpc::Value::Binary ToBinary(const std::string& s)
 {
   return {s.begin(), s.end()};
+}
+
+std::string FromBinary(const xsonrpc::Value& b)
+{
+  return {b.AsBinary().begin(), b.AsBinary().end()};
 }
 
 xsonrpc::Value::Struct ToStruct(const xsonrpc::Value::Array& a)
@@ -54,13 +63,15 @@ xsonrpc::Value::Struct ToStruct(const xsonrpc::Value::Array& a)
 
 int main()
 {
+  Math math;
   xsonrpc::Server server(8080);
 
   auto& dispatcher = server.GetDispatcher();
-  dispatcher.AddMethod("add", &Add);
-  dispatcher.AddMethod("add_array", &AddArray);
+  dispatcher.AddMethod("add", &Math::Add, math);
+  dispatcher.AddMethod("add_array", &Math::AddArray, math);
   dispatcher.AddMethod("concat", &Concat);
   dispatcher.AddMethod("to_binary", &ToBinary);
+  dispatcher.AddMethod("from_binary", &FromBinary);
   dispatcher.AddMethod("to_struct", &ToStruct);
 
   server.Run();

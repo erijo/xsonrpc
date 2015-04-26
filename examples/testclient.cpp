@@ -26,8 +26,9 @@ int main()
 
   xsonrpc::Client client("localhost", 8080);
 
-  std::cout << "3+2=" << client.Call("add", 3, 2) << "\n";
-  std::cout << client.Call("concat", "Hello, ", "World!") << "\n";
+  std::cout << "add: 3+2=" << client.Call("add", 3, 2) << "\n";
+  std::cout << "concat: " << client.Call("concat", "Hello, ", "World!")
+            << "\n";
 
   xsonrpc::Request::Parameters params;
   {
@@ -39,6 +40,10 @@ int main()
   std::cout << "add_array: " << client.Call("add_array", params) << "\n";
 
   std::cout << "to_binary: " << client.Call("to_binary", "Hello World!")
+            << "\n";
+  std::cout << "from_binary: "
+            << client.Call("from_binary",
+                           xsonrpc::Value::Binary{'H', 'i', '!'})
             << "\n";
 
   params.clear();

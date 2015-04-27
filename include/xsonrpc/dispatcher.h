@@ -154,11 +154,10 @@ public:
                            ReturnType(T::*method)(ParameterTypes...),
                            T& instance)
   {
-    T* ptr = &instance;
     std::function<ReturnType(ParameterTypes...)> function =
-      [method,ptr] (ParameterTypes&&... params) -> ReturnType
+      [&instance,method] (ParameterTypes&&... params) -> ReturnType
       {
-        return (*ptr.*method)(std::forward<ParameterTypes>(params)...);
+        return (instance.*method)(std::forward<ParameterTypes>(params)...);
       };
     return AddMethodInternal(std::move(name), std::move(function));
   }
@@ -168,11 +167,10 @@ public:
                            ReturnType(T::*method)(ParameterTypes...) const,
                            T& instance)
   {
-    T* ptr = &instance;
     std::function<ReturnType(ParameterTypes...)> function =
-      [method,ptr] (ParameterTypes&&... params) -> ReturnType
+      [&instance,method] (ParameterTypes&&... params) -> ReturnType
       {
-        return (*ptr.*method)(std::forward<ParameterTypes>(params)...);
+        return (instance.*method)(std::forward<ParameterTypes>(params)...);
       };
     return AddMethodInternal(std::move(name), std::move(function));
   }

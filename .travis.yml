@@ -20,4 +20,3 @@ before_script:
 script:
   - cd build
   - make
-  - make examples

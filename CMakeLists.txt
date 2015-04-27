@@ -7,7 +7,7 @@ set(XSONRPC_VERSION_MINOR 1)
 set(XSONRPC_VERSION "${XSONRPC_VERSION_MAJOR}.${XSONRPC_VERSION_MINOR}")
 
 # Options
-option(BUILD_EXAMPLES "Build xsonrpc examples" OFF)
+option(BUILD_EXAMPLES "Build xsonrpc examples" ON)
 option(BUILD_TESTS "Build xsonrpc unit tests" ON)
 
 include(CheckCXXCompilerFlag)

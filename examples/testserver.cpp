@@ -74,13 +74,15 @@ int main()
   dispatcher.AddMethod("from_binary", &FromBinary);
   dispatcher.AddMethod("to_struct", &ToStruct);
 
+  bool run = true;
+  dispatcher.AddMethod("exit", [&] () { run = false; });
   server.Run();
 
   pollfd fd;
   fd.fd = server.GetFileDescriptor();
   fd.events = POLLIN;
 
-  while (poll(&fd, 1, -1) == 1) {
+  while (run && poll(&fd, 1, -1) == 1) {
     server.OnReadableFileDescriptor();
   }
 

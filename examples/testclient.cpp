@@ -17,10 +17,11 @@
 
 #include "xsonrpc/client.h"
 
+#include <cstring>
 #include <iostream>
 #include <limits>
 
-int main()
+int main(int argc, char** argv)
 {
   xsonrpc::Client::GlobalInit();
 
@@ -55,6 +56,10 @@ int main()
     params.push_back(std::move(a));
   }
   std::cout << "to_struct: " << client.Call("to_struct", params) << "\n";
+
+  if (argc >= 2 && strcmp(argv[1], "-e") == 0) {
+    std::cout << "exit: " << client.Call("exit") << "\n";
+  }
 
   return 0;
 }

@@ -190,6 +190,22 @@ private:
                              std::index_sequence_for<ParameterTypes...>{});
   }
 
+  template<typename... ParameterTypes>
+  MethodWrapper& AddMethodInternal(
+    std::string name,
+    std::function<void(ParameterTypes...)> method)
+  {
+    std::function<Value(ParameterTypes...)> returnMethod =
+      [method] (ParameterTypes&&... params) -> Value
+      {
+        method(std::forward<ParameterTypes>(params)...);
+        return Value();
+      };
+    return AddMethodInternal(
+      std::move(name), std::move(returnMethod),
+      std::index_sequence_for<ParameterTypes...>{});
+  }
+
   template<typename ReturnType, typename... ParameterTypes,
            std::size_t... index>
   MethodWrapper& AddMethodInternal(

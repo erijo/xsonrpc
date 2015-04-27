@@ -13,7 +13,7 @@ target_include_directories(unittest PRIVATE
 target_include_directories(unittest PRIVATE ${TINYXML2_INCLUDE_DIR})
 
 # Catch (test framework)
-include_directories("${PROJECT_SOURCE_DIR}/3pp/catch")
+include_directories("${PROJECT_SOURCE_DIR}/3pp/catch/include")
 
 add_test(NAME unittest COMMAND unittest)
 

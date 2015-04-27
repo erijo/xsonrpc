@@ -227,6 +227,25 @@ TEST_CASE("dispatcher")
   }
 }
 
+TEST_CASE("dispatcher returning void")
+{
+  Dispatcher dispatcher;
+
+  int value = 0;
+  dispatcher.AddMethod(
+    "test",
+    [&] (int32_t a, const Value& b)
+    {
+      value = a + b.AsInteger32();
+    });
+
+  auto response = dispatcher.Invoke("test", {123, 321});
+  CAPTURE(response.GetResult());
+  CHECK_FALSE(response.IsFault());
+  CHECK(response.GetResult().IsNil());
+  CHECK(value == 444);
+}
+
 TEST_CASE("dispatcher multicall")
 {
   Dispatcher dispatcher;

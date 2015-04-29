@@ -27,12 +27,13 @@
 
 namespace tinyxml2 {
 class XMLElement;
-class XMLPrinter;
 }
 
 struct tm;
 
 namespace xsonrpc {
+
+class Writer;
 
 class Value
 {
@@ -133,7 +134,7 @@ public:
   static std::string GetTypeName(Type type);
   Type GetType() const { return myType; }
 
-  void Print(tinyxml2::XMLPrinter& printer) const;
+  void Write(Writer& writer) const;
 
   inline const Value& operator[](Array::size_type i) const;
   inline const Value& operator[](const Struct::key_type& key) const;

@@ -17,6 +17,7 @@
 
 #include "fault.h"
 #include "value.h"
+#include "../src/xmlwriter.h"
 
 #include <catch.hpp>
 #include <memory>
@@ -28,9 +29,9 @@ namespace {
 
 std::string ToXml(const Value& value)
 {
-  tinyxml2::XMLPrinter printer(nullptr);
-  value.Print(printer);
-  return printer.CStr();
+  XmlWriter writer;
+  value.Write(writer);
+  return std::string(writer.GetData(), writer.GetSize());
 }
 
 std::unique_ptr<Value> FromXml(const char* xml)
@@ -138,14 +139,10 @@ TEST_CASE("array")
   CHECK_THROWS_AS((*value)[2], std::out_of_range);
 
   CHECK(ToXml(*value) ==
-        "<value>\n"
-        "    <array>\n"
-        "        <data>\n"
-        "            <value><i4>1</i4></value>\n"
-        "            <value><boolean>0</boolean></value>\n"
-        "        </data>\n"
-        "    </array>\n"
-        "</value>\n");
+        "<value><array><data>"
+        "<value><i4>1</i4></value>"
+        "<value><boolean>0</boolean></value>"
+        "</data></array></value>");
 }
 
 TEST_CASE("binary")
@@ -192,10 +189,7 @@ TEST_CASE("binary")
   REQUIRE(value->AsBinary().size() == 6);
   CHECK(value->AsBinary() == (Value::Binary{'h', 'e', 'l', 'l', 'o', '!'}));
 
-  CHECK(ToXml(*value) ==
-        "<value>\n"
-        "    <base64>aGVsbG8h</base64>\n"
-        "</value>\n");
+  CHECK(ToXml(*value) == "<value><base64>aGVsbG8h</base64></value>");
 }
 
 TEST_CASE("boolean")
@@ -543,26 +537,14 @@ TEST_CASE("struct")
   CHECK_THROWS_AS((*value)["notthere"], std::out_of_range);
 
   CHECK(ToXml(*value) ==
-        "<value>\n"
-        "    <struct>\n"
-        "        <member>\n"
-        "            <name>bar</name>\n"
-        "            <value>\n"
-        "                <array>\n"
-        "                    <data>\n"
-        "                        <value><string>a string</string></value>\n"
-        "                    </data>\n"
-        "                </array>\n"
-        "            </value>\n"
-        "        </member>\n"
-        "        <member>\n"
-        "            <name>foo</name>\n"
-        "            <value><boolean>1</boolean></value>\n"
-        "        </member>\n"
-        "        <member>\n"
-        "            <name>test</name>\n"
-        "            <value><i4>-34</i4></value>\n"
-        "        </member>\n"
-        "    </struct>\n"
-        "</value>\n");
+        "<value><struct>"
+        "<member><name>bar</name>"
+        "<value><array><data>"
+        "<value><string>a string</string></value>"
+        "</data></array></value></member>"
+        "<member><name>foo</name>"
+        "<value><boolean>1</boolean></value></member>"
+        "<member><name>test</name>"
+        "<value><i4>-34</i4></value></member>"
+        "</struct></value>");
 }

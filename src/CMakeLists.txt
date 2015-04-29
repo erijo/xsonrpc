@@ -9,6 +9,7 @@ add_library(xsonrpc SHARED
   server.cpp
   util.cpp
   value.cpp
+  xmlwriter.cpp
 )
 
 install(TARGETS xsonrpc LIBRARY DESTINATION "lib")

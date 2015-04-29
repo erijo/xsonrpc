@@ -23,10 +23,11 @@
 
 namespace tinyxml2 {
 class XMLElement;
-class XMLPrinter;
 }
 
 namespace xsonrpc {
+
+class Writer;
 
 class Response
 {
@@ -36,7 +37,7 @@ public:
   Response(Value value);
   Response(const Fault& fault);
 
-  void Print(tinyxml2::XMLPrinter& printer) const;
+  void Write(Writer& writer) const;
 
   Value& GetResult() { return myResult; }
   const Value& GetResult() const { return myResult; }

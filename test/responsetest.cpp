@@ -16,6 +16,7 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "response.h"
+#include "../src/xmlwriter.h"
 
 #include <catch.hpp>
 #include <tinyxml2.h>
@@ -26,9 +27,9 @@ namespace {
 
 std::string ToXml(const Response& response)
 {
-  tinyxml2::XMLPrinter printer(nullptr);
-  response.Print(printer);
-  return printer.CStr();
+  XmlWriter writer;
+  response.Write(writer);
+  return std::string(writer.GetData(), writer.GetSize());
 }
 
 } // namespace
@@ -41,14 +42,12 @@ TEST_CASE("bool response")
   CHECK(response.GetResult().AsBoolean());
 
   CHECK(ToXml(response) ==
-        "<?xml version=\"1.0\"?>\n"
-        "<methodResponse>\n"
-        "    <params>\n"
-        "        <param>\n"
-        "            <value><boolean>1</boolean></value>\n"
-        "        </param>\n"
-        "    </params>\n"
-        "</methodResponse>\n");
+        "<?xml version=\"1.0\"?>"
+        "<methodResponse>"
+        "<params><param>"
+        "<value><boolean>1</boolean></value>"
+        "</param></params>"
+        "</methodResponse>");
 }
 
 TEST_CASE("fault response")
@@ -58,21 +57,13 @@ TEST_CASE("fault response")
   CHECK_THROWS_AS(response.ThrowIfFault(), Fault);
 
   CHECK(ToXml(response) ==
-        "<?xml version=\"1.0\"?>\n"
-        "<methodResponse>\n"
-        "    <fault>\n"
-        "        <value>\n"
-        "            <struct>\n"
-        "                <member>\n"
-        "                    <name>faultCode</name>\n"
-        "                    <value><i4>123</i4></value>\n"
-        "                </member>\n"
-        "                <member>\n"
-        "                    <name>faultString</name>\n"
-        "                    <value><string>test</string></value>\n"
-        "                </member>\n"
-        "            </struct>\n"
-        "        </value>\n"
-        "    </fault>\n"
-        "</methodResponse>\n");
+        "<?xml version=\"1.0\"?>"
+        "<methodResponse>"
+        "<fault><value><struct>"
+        "<member><name>faultCode</name>"
+        "<value><i4>123</i4></value></member>"
+        "<member><name>faultString</name>"
+        "<value><string>test</string></value></member>"
+        "</struct></value></fault>"
+        "</methodResponse>");
 }

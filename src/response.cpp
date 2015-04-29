@@ -17,6 +17,7 @@
 
 #include "response.h"
 #include "util.h"
+#include "xmlwriter.h"
 
 #include <tinyxml2.h>
 
@@ -87,22 +88,13 @@ Response::Response(const Fault& fault)
   myResult = std::move(data);
 }
 
-void Response::Print(tinyxml2::XMLPrinter& printer) const
+void Response::Write(Writer& writer) const
 {
-  printer.PushHeader(false, true);
-  printer.OpenElement(METHOD_RESPONSE_TAG);
-
-  if (!myIsFault) {
-    printer.OpenElement(PARAMS_TAG);
-  }
-  printer.OpenElement(myIsFault ? FAULT_TAG : PARAM_TAG);
-  myResult.Print(printer);
-  printer.CloseElement();
-  if (!myIsFault) {
-    printer.CloseElement();
-  }
-
-  printer.CloseElement();
+  writer.StartDocument();
+  writer.StartResponse(myIsFault);
+  myResult.Write(writer);
+  writer.EndResponse(myIsFault);
+  writer.EndDocument();
 }
 
 void Response::ThrowIfFault() const

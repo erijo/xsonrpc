@@ -18,6 +18,7 @@
 #include "client.h"
 #include "fault.h"
 #include "response.h"
+#include "xmlwriter.h"
 
 #include <curl/curl.h>
 #include <curl/easy.h>
@@ -70,12 +71,12 @@ Client::~Client()
 Value Client::CallInternal(const std::string& methodName,
                            const Request::Parameters& params)
 {
-  tinyxml2::XMLPrinter printer;
-  Request::Print(methodName, params, printer);
+  XmlWriter writer;
+  Request::Write(methodName, params, writer);
 
   curl_easy_setopt(myHandle, CURLOPT_POSTFIELDSIZE_LARGE,
-                   static_cast<curl_off_t>(printer.CStrSize() - 1));
-  curl_easy_setopt(myHandle, CURLOPT_POSTFIELDS, printer.CStr());
+                   static_cast<curl_off_t>(writer.GetSize()));
+  curl_easy_setopt(myHandle, CURLOPT_POSTFIELDS, writer.GetData());
 
   std::unique_ptr<curl_slist, void(*)(curl_slist*)> headers(
     curl_slist_append(NULL, "Content-Type: text/xml"), &curl_slist_free_all);

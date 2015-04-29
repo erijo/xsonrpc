@@ -18,6 +18,7 @@
 #include "util.h"
 #include "fault.h"
 #include "value.h"
+#include "writer.h"
 
 #include <ctime>
 #include <ostream>
@@ -46,12 +47,6 @@ const char MEMBER_TAG[] = "member";
 const char NAME_TAG[] = "name";
 
 const char DATE_TIME_FORMAT[] = "%Y%m%dT%T";
-
-std::string FormatIso8601DateTime(const tm& dt)
-{
-  char str[128];
-  return std::string(str, strftime(str, sizeof(str), DATE_TIME_FORMAT, &dt));
-}
 
 } // namespace
 
@@ -342,86 +337,50 @@ std::string Value::GetTypeName(Type type)
   return {};
 }
 
-void Value::Print(tinyxml2::XMLPrinter& printer) const
+void Value::Write(Writer& writer) const
 {
-  printer.OpenElement(VALUE_TAG);
-
-  bool compact = false;
   switch (myType) {
-    case Type::ARRAY: {
-      printer.OpenElement(ARRAY_TAG);
-      printer.OpenElement(DATA_TAG);
-      for (const auto& element : *as.myArray) {
-        element.Print(printer);
+    case Type::ARRAY:
+      writer.StartArray();
+      for (auto& element : *as.myArray) {
+        element.Write(writer);
       }
-      printer.CloseElement();
-      printer.CloseElement();
+      writer.EndArray();
       break;
-    }
     case Type::BINARY:
-      printer.OpenElement(BASE_64_TAG);
-      printer.PushText(util::Base64Encode(*as.myBinary).c_str());
-      printer.CloseElement();
+      writer.WriteBinary(as.myBinary->data(), as.myBinary->size());
       break;
     case Type::BOOLEAN:
-      compact = true;
-      printer.OpenElement(BOOLEAN_TAG, compact);
-      printer.PushText(as.myBoolean);
-      printer.CloseElement(compact);
+      writer.Write(as.myBoolean);
       break;
     case Type::DATE_TIME:
-      compact = true;
-      printer.OpenElement(DATE_TIME_TAG, compact);
-      printer.PushText(FormatIso8601DateTime(*as.myDateTime).c_str());
-      printer.CloseElement(compact);
+      writer.Write(*as.myDateTime);
       break;
     case Type::DOUBLE:
-      compact = true;
-      printer.OpenElement(DOUBLE_TAG, compact);
-      printer.PushText(as.myDouble);
-      printer.CloseElement(compact);
+      writer.Write(as.myDouble);
       break;
     case Type::INTEGER_32:
-      compact = true;
-      printer.OpenElement(INTEGER_32_TAG, compact);
-      printer.PushText(as.myInteger32);
-      printer.CloseElement(compact);
+      writer.Write(as.myInteger32);
       break;
     case Type::INTEGER_64:
-      compact = true;
-      printer.OpenElement(INTEGER_64_TAG, compact);
-      printer.PushText(std::to_string(as.myInteger64).c_str());
-      printer.CloseElement(compact);
+      writer.Write(as.myInteger64);
       break;
     case Type::NIL:
-      compact = true;
-      printer.OpenElement(NIL_TAG, compact);
-      printer.CloseElement(compact);
+      writer.WriteNull();
       break;
     case Type::STRING:
-      compact = true;
-      printer.OpenElement(STRING_TAG, compact);
-      printer.PushText(as.myString->c_str());
-      printer.CloseElement(compact);
+      writer.Write(*as.myString);
       break;
-    case Type::STRUCT: {
-      printer.OpenElement(STRUCT_TAG);
-      for (const auto& element : *as.myStruct) {
-        printer.OpenElement(MEMBER_TAG);
-
-        printer.OpenElement(NAME_TAG);
-        printer.PushText(element.first.c_str());
-        printer.CloseElement(true);
-
-        element.second.Print(printer);
-        printer.CloseElement();
+    case Type::STRUCT:
+      writer.StartStruct();
+      for (auto& element : *as.myStruct) {
+        writer.StartStructElement(element.first);
+        element.second.Write(writer);
+        writer.EndStructElement();
       }
-      printer.CloseElement();
+      writer.EndStruct();
       break;
-    }
   }
-
-  printer.CloseElement(compact);
 }
 
 void Value::Reset()
@@ -476,7 +435,7 @@ std::ostream& operator<<(std::ostream& os, const Value& value)
       os << value.AsBoolean();
       break;
     case Value::Type::DATE_TIME:
-      os << FormatIso8601DateTime(value.AsDateTime());
+      os << util::FormatIso8601DateTime(value.AsDateTime());
       break;
     case Value::Type::DOUBLE:
       os << value.AsDouble();

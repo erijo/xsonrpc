@@ -18,6 +18,7 @@
 #include "fault.h"
 #include "request.h"
 #include "util.h"
+#include "writer.h"
 
 #include <tinyxml2.h>
 
@@ -55,30 +56,23 @@ Request::Request(const tinyxml2::XMLElement* root)
   }
 }
 
-void Request::Print(tinyxml2::XMLPrinter& printer) const
+void Request::Write(Writer& writer) const
 {
-  Print(myMethodName, myParameters, printer);
+  Write(myMethodName, myParameters, writer);
 }
 
-void Request::Print(const std::string& methodName, const Parameters& params,
-                    tinyxml2::XMLPrinter& printer)
+void Request::Write(const std::string& methodName, const Parameters& params,
+                    Writer& writer)
 {
-  printer.PushHeader(false, true);
-  printer.OpenElement(METHOD_CALL_TAG);
-
-  printer.OpenElement(METHOD_NAME_TAG);
-  printer.PushText(methodName.c_str());
-  printer.CloseElement();
-
-  printer.OpenElement(PARAMS_TAG);
+  writer.StartDocument();
+  writer.StartRequest(methodName);
   for (auto& param : params) {
-    printer.OpenElement(PARAM_TAG);
-    param.Print(printer);
-    printer.CloseElement();
+    writer.StartParameter();
+    param.Write(writer);
+    writer.EndParameter();
   }
-  printer.CloseElement();
-
-  printer.CloseElement();
+  writer.EndRequest();
+  writer.EndDocument();
 }
 
 } // namespace xsonrpc

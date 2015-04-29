@@ -26,11 +26,15 @@ namespace tinyxml2 {
 class XMLElement;
 }
 
+struct tm;
+
 namespace xsonrpc {
 namespace util {
 
 bool IsTag(const tinyxml2::XMLElement& element, const char* tag);
 bool HasEmptyText(const tinyxml2::XMLElement& element);
+
+std::string FormatIso8601DateTime(const tm& dt);
 
 inline std::string Base64Encode(const std::vector<uint8_t>& data);
 std::string Base64Encode(const uint8_t* data, size_t size);

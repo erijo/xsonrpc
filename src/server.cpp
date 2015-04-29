@@ -16,6 +16,7 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "server.h"
+#include "xmlwriter.h"
 
 #include <sys/socket.h>
 #include <unistd.h>
@@ -37,7 +38,7 @@ struct HttpError
 struct ConnectionInfo
 {
   std::vector<char> Buffer;
-  tinyxml2::XMLPrinter Printer;
+  xsonrpc::XmlWriter Writer;
 };
 
 } // namespace
@@ -113,21 +114,21 @@ void Server::HandleRequest(MHD_Connection* connection, void* connectionCls)
     document.Clear();
     auto response = myDispatcher.Invoke(
       request.GetMethodName(), request.GetParameters());
-    response.Print(info->Printer);
+    response.Write(info->Writer);
   }
   catch (const Fault& ex) {
-    Response(ex).Print(info->Printer);
+    Response(ex).Write(info->Writer);
   }
 
 #if MHD_VERSION >= 0x00090500
   auto response = MHD_create_response_from_buffer(
-    info->Printer.CStrSize() - 1,
-    const_cast<char*>(info->Printer.CStr()),
+    info->Writer.GetSize(),
+    const_cast<char*>(info->Writer.GetData()),
     MHD_RESPMEM_PERSISTENT);
 #else
   auto response = MHD_create_response_from_data(
-    info->Printer.CStrSize() - 1,
-    const_cast<char*>(info->Printer.CStr()),
+    info->Writer.GetSize(),
+    const_cast<char*>(info->Writer.GetData()()),
     false, false);
 #endif
 

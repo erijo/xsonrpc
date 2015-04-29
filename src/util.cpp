@@ -23,6 +23,8 @@
 
 namespace {
 
+const char DATE_TIME_FORMAT[] = "%Y%m%dT%T";
+
 constexpr char BASE_64_ALPHABET[64 + 1] =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -76,6 +78,12 @@ bool HasEmptyText(const tinyxml2::XMLElement& element)
 {
   auto text = element.GetText();
   return !text || text[0] == '\0';
+}
+
+std::string FormatIso8601DateTime(const tm& dt)
+{
+  char str[128];
+  return std::string(str, strftime(str, sizeof(str), DATE_TIME_FORMAT, &dt));
 }
 
 std::string Base64Encode(const uint8_t* data, size_t size)

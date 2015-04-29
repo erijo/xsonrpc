@@ -16,6 +16,7 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "request.h"
+#include "../src/xmlwriter.h"
 
 #include <catch.hpp>
 #include <tinyxml2.h>
@@ -26,9 +27,9 @@ namespace {
 
 std::string ToXml(const Request& request)
 {
-  tinyxml2::XMLPrinter printer(nullptr);
-  request.Print(printer);
-  return printer.CStr();
+  XmlWriter writer;
+  request.Write(writer);
+  return std::string(writer.GetData(), writer.GetSize());
 }
 
 } // namespace
@@ -78,11 +79,11 @@ TEST_CASE("only method name")
   CHECK(request.GetMethodName() == "test");
   CHECK(request.GetParameters().empty());
   CHECK(ToXml(request) ==
-        "<?xml version=\"1.0\"?>\n"
-        "<methodCall>\n"
-        "    <methodName>test</methodName>\n"
-        "    <params/>\n"
-        "</methodCall>\n");
+        "<?xml version=\"1.0\"?>"
+        "<methodCall>"
+        "<methodName>test</methodName>"
+        "<params/>"
+        "</methodCall>");
 }
 
 TEST_CASE("one parameter")
@@ -100,15 +101,13 @@ TEST_CASE("one parameter")
   REQUIRE_FALSE(request.GetParameters().empty());
   CHECK(request.GetParameters()[0].IsInteger32());
   CHECK(ToXml(request) ==
-        "<?xml version=\"1.0\"?>\n"
-        "<methodCall>\n"
-        "    <methodName>test</methodName>\n"
-        "    <params>\n"
-        "        <param>\n"
-        "            <value><i4>47</i4></value>\n"
-        "        </param>\n"
-        "    </params>\n"
-        "</methodCall>\n");
+        "<?xml version=\"1.0\"?>"
+        "<methodCall>"
+        "<methodName>test</methodName>"
+        "<params><param>"
+        "<value><i4>47</i4></value>"
+        "</param></params>"
+        "</methodCall>");
 }
 
 
@@ -131,19 +130,13 @@ TEST_CASE("three parameters")
   CHECK(request.GetParameters()[1].AsInteger32() == 46);
   CHECK(request.GetParameters()[2].AsInteger32() == 45);
   CHECK(ToXml(request) ==
-        "<?xml version=\"1.0\"?>\n"
-        "<methodCall>\n"
-        "    <methodName>test</methodName>\n"
-        "    <params>\n"
-        "        <param>\n"
-        "            <value><i4>47</i4></value>\n"
-        "        </param>\n"
-        "        <param>\n"
-        "            <value><i4>46</i4></value>\n"
-        "        </param>\n"
-        "        <param>\n"
-        "            <value><i4>45</i4></value>\n"
-        "        </param>\n"
-        "    </params>\n"
-        "</methodCall>\n");
+        "<?xml version=\"1.0\"?>"
+        "<methodCall>"
+        "<methodName>test</methodName>"
+        "<params>"
+        "<param><value><i4>47</i4></value></param>"
+        "<param><value><i4>46</i4></value></param>"
+        "<param><value><i4>45</i4></value></param>"
+        "</params>"
+        "</methodCall>");
 }

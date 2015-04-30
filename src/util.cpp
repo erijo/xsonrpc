@@ -1,5 +1,5 @@
 // This file is part of xsonrpc, an XML/JSON RPC library.
-// Copyright (C) 2015 Erik Johansson <erik@ejohansson.se
+// Copyright (C) 2015 Erik Johansson <erik@ejohansson.se>
 //
 // This library is free software; you can redistribute it and/or modify it
 // under the terms of the GNU Lesser General Public License as published by the

@@ -19,6 +19,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <ctime>
 #include <tinyxml2.h>
 
 namespace {
@@ -84,6 +85,20 @@ std::string FormatIso8601DateTime(const tm& dt)
 {
   char str[128];
   return std::string(str, strftime(str, sizeof(str), DATE_TIME_FORMAT, &dt));
+}
+
+bool ParseIso8601DateTime(const char* text, tm& dt)
+{
+  if (!text) {
+    return false;
+  }
+  memset(&dt, 0, sizeof(dt));
+  auto* res = strptime(text, DATE_TIME_FORMAT, &dt);
+  if (!res || *res != '\0') {
+    return false;
+  }
+  dt.tm_isdst = -1;
+  return true;
 }
 
 std::string Base64Encode(const uint8_t* data, size_t size)

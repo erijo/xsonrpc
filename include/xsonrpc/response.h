@@ -18,12 +18,7 @@
 #ifndef XSONRPC_RESPONSE_H
 #define XSONRPC_RESPONSE_H
 
-#include "fault.h"
 #include "value.h"
-
-namespace tinyxml2 {
-class XMLElement;
-}
 
 namespace xsonrpc {
 
@@ -32,10 +27,8 @@ class Writer;
 class Response
 {
 public:
-  explicit Response(const tinyxml2::XMLElement* root);
-
   Response(Value value);
-  Response(const Fault& fault);
+  Response(int32_t faultCode, std::string faultString);
 
   void Write(Writer& writer) const;
 
@@ -47,6 +40,8 @@ public:
 private:
   Value myResult;
   bool myIsFault;
+  int32_t myFaultCode;
+  std::string myFaultString;
 };
 
 } // namespace xsonrpc

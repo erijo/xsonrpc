@@ -16,15 +16,16 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "client.h"
+
 #include "fault.h"
 #include "response.h"
+#include "xmlreader.h"
 #include "xmlwriter.h"
 
 #include <curl/curl.h>
 #include <curl/easy.h>
 #include <memory>
 #include <stdexcept>
-#include <tinyxml2.h>
 
 namespace {
 
@@ -96,16 +97,8 @@ Value Client::CallInternal(const std::string& methodName,
     throw std::runtime_error("client: HTTP request failed");
   }
 
-  tinyxml2::XMLDocument document;
-  auto error = document.Parse(buffer.data(), buffer.size());
-  if (error == tinyxml2::XML_CAN_NOT_CONVERT_TEXT) {
-    throw InvalidCharacterFault();
-  }
-  else if (error != tinyxml2::XML_NO_ERROR) {
-    throw NotWellFormedFault();
-  }
-
-  Response response{document.RootElement()};
+  XmlReader reader(buffer.data(), buffer.size());
+  Response response = reader.GetResponse();
   response.ThrowIfFault();
   return std::move(response.GetResult());
 }

@@ -15,38 +15,15 @@
 // along with this library; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#include "util.h"
 #include "xmlwriter.h"
 
-namespace {
-
-const char METHOD_CALL_TAG[] = "methodCall";
-const char METHOD_NAME_TAG[] = "methodName";
-const char METHOD_RESPONSE_TAG[] = "methodResponse";
-const char FAULT_TAG[] = "fault";
-const char PARAMS_TAG[] = "params";
-const char PARAM_TAG[] = "param";
-
-const char VALUE_TAG[] = "value";
-
-const char ARRAY_TAG[] = "array";
-const char BASE_64_TAG[] = "base64";
-const char BOOLEAN_TAG[] = "boolean";
-const char DATE_TIME_TAG[] = "dateTime.iso8601";
-const char DOUBLE_TAG[] = "double";
-const char INTEGER_32_TAG[] = "i4";
-const char INTEGER_64_TAG[] = "i8";
-const char NIL_TAG[] = "nil";
-const char STRING_TAG[] = "string";
-const char STRUCT_TAG[] = "struct";
-
-const char DATA_TAG[] = "data";
-const char MEMBER_TAG[] = "member";
-const char NAME_TAG[] = "name";
-
-} // namespace
+#include "util.h"
+#include "value.h"
+#include "xml.h"
 
 namespace xsonrpc {
+
+using namespace xml;
 
 const char* XmlWriter::GetData() const
 {
@@ -95,29 +72,38 @@ void XmlWriter::EndParameter()
   myPrinter.CloseElement(true);
 }
 
-void XmlWriter::StartResponse(bool isFault)
+void XmlWriter::StartResponse()
 {
   myPrinter.OpenElement(METHOD_RESPONSE_TAG, true);
-
-  if (!isFault) {
-    myPrinter.OpenElement(PARAMS_TAG, true);
-    myPrinter.OpenElement(PARAM_TAG, true);
-  }
-  else {
-    myPrinter.OpenElement(FAULT_TAG, true);
-  }
+  myPrinter.OpenElement(PARAMS_TAG, true);
+  myPrinter.OpenElement(PARAM_TAG, true);
 }
 
-void XmlWriter::EndResponse(bool isFault)
+void XmlWriter::EndResponse()
 {
-  if (!isFault) {
-    myPrinter.CloseElement(true);
-    myPrinter.CloseElement(true);
-  }
-  else {
-    myPrinter.CloseElement(true);
-  }
   myPrinter.CloseElement(true);
+  myPrinter.CloseElement(true);
+  myPrinter.CloseElement(true);
+}
+
+void XmlWriter::StartFaultResponse()
+{
+  myPrinter.OpenElement(METHOD_RESPONSE_TAG, true);
+  myPrinter.OpenElement(FAULT_TAG, true);
+}
+
+void XmlWriter::EndFaultResponse()
+{
+  myPrinter.CloseElement(true);
+  myPrinter.CloseElement(true);
+}
+
+void XmlWriter::WriteFault(int32_t code, const std::string& string)
+{
+  Value::Struct fault;
+  fault.insert({FAULT_CODE_NAME, code});
+  fault.insert({FAULT_STRING_NAME, string});
+  Value(std::move(fault)).Write(*this);
 }
 
 void XmlWriter::StartArray()

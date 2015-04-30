@@ -15,11 +15,11 @@
 // along with this library; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
+#include "fault.h"
 #include "response.h"
 #include "../src/xmlwriter.h"
 
 #include <catch.hpp>
-#include <tinyxml2.h>
 
 using namespace xsonrpc;
 
@@ -52,7 +52,7 @@ TEST_CASE("bool response")
 
 TEST_CASE("fault response")
 {
-  Response response(Fault("test", 123));
+  Response response(123, "test");
   CHECK(response.IsFault());
   CHECK_THROWS_AS(response.ThrowIfFault(), Fault);
 

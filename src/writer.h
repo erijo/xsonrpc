@@ -40,8 +40,11 @@ public:
   virtual void EndParameter() = 0;
 
   // Response
-  virtual void StartResponse(bool isFault) = 0;
-  virtual void EndResponse(bool isFault) = 0;
+  virtual void StartResponse() = 0;
+  virtual void EndResponse() = 0;
+  virtual void StartFaultResponse() = 0;
+  virtual void EndFaultResponse() = 0;
+  virtual void WriteFault(int32_t code, const std::string& string) = 0;
 
   // Values
   virtual void StartArray() = 0;

@@ -246,6 +246,7 @@ TEST_CASE("dispatcher returning void")
   CHECK(value == 444);
 }
 
+#if 0
 TEST_CASE("dispatcher multicall")
 {
   Dispatcher dispatcher;
@@ -314,3 +315,4 @@ TEST_CASE("dispatcher multicall")
   CHECK(value[2].AsArray().size() == 1);
   CHECK(value[2][0].AsBoolean());
 }
+#endif

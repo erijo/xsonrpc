@@ -16,62 +16,11 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "response.h"
-#include "util.h"
-#include "xmlwriter.h"
 
-#include <tinyxml2.h>
-
-namespace {
-
-const char METHOD_RESPONSE_TAG[] = "methodResponse";
-const char PARAMS_TAG[] = "params";
-const char PARAM_TAG[] = "param";
-const char FAULT_TAG[] = "fault";
-
-const char FAULT_CODE_NAME[] = "faultCode";
-const char FAULT_STRING_NAME[] = "faultString";
-
-} // namespace
+#include "fault.h"
+#include "writer.h"
 
 namespace xsonrpc {
-
-Response::Response(const tinyxml2::XMLElement* root)
-{
-  if (!root || !util::IsTag(*root, METHOD_RESPONSE_TAG)) {
-    throw InvalidXmlRpcFault("missing method response element");
-  }
-
-  auto value = root->FirstChildElement(PARAMS_TAG);
-  if (value) {
-    myIsFault = false;
-    value = value->FirstChildElement(PARAM_TAG);
-  }
-  else {
-    myIsFault = true;
-    value = root->FirstChildElement(FAULT_TAG);
-  }
-
-  if (!value) {
-    throw InvalidXmlRpcFault("missing param or fault element");
-  }
-
-  myResult = Value(value->FirstChildElement());
-
-  if (myIsFault) {
-    if (!myResult.IsStruct()) {
-      throw InvalidXmlRpcFault("fault is not a struct");
-    }
-    auto& s = myResult.AsStruct();
-    if (s.find(FAULT_CODE_NAME) == s.end()
-        || !s.find(FAULT_CODE_NAME)->second.IsInteger32()) {
-      throw InvalidXmlRpcFault("missing or invalid fault code");
-    }
-    if (s.find(FAULT_STRING_NAME) == s.end()
-        || !s.find(FAULT_STRING_NAME)->second.IsString()) {
-      throw InvalidXmlRpcFault("missing or invalid fault string");
-    }
-  }
-}
 
 Response::Response(Value value)
   : myResult(std::move(value)),
@@ -79,21 +28,26 @@ Response::Response(Value value)
 {
 }
 
-Response::Response(const Fault& fault)
-  : myIsFault(true)
+Response::Response(int32_t faultCode, std::string faultString)
+  : myIsFault(true),
+    myFaultCode(faultCode),
+    myFaultString(std::move(faultString))
 {
-  Value::Struct data;
-  data[FAULT_CODE_NAME] = fault.GetCode();
-  data[FAULT_STRING_NAME] = fault.GetString();
-  myResult = std::move(data);
 }
 
 void Response::Write(Writer& writer) const
 {
   writer.StartDocument();
-  writer.StartResponse(myIsFault);
-  myResult.Write(writer);
-  writer.EndResponse(myIsFault);
+  if (myIsFault) {
+    writer.StartFaultResponse();
+    writer.WriteFault(myFaultCode, myFaultString);
+    writer.EndFaultResponse();
+  }
+  else {
+    writer.StartResponse();
+    myResult.Write(writer);
+    writer.EndResponse();
+  }
   writer.EndDocument();
 }
 
@@ -103,9 +57,8 @@ void Response::ThrowIfFault() const
     return;
   }
 
-  //TODO: auto faultCode = myResult[FAULT_CODE_NAME];
-  auto& faultString = myResult[FAULT_STRING_NAME];
-  throw Fault(faultString.AsString());
+  // TODO: use myFaultCode
+  throw Fault(myFaultString);
 }
 
 } // namespace xsonrpc

@@ -16,10 +16,11 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "request.h"
+#include "../src/xmlreader.h"
 #include "../src/xmlwriter.h"
 
 #include <catch.hpp>
-#include <tinyxml2.h>
+#include <memory>
 
 using namespace xsonrpc;
 
@@ -36,46 +37,41 @@ std::string ToXml(const Request& request)
 
 TEST_CASE("invalid request")
 {
-  tinyxml2::XMLDocument document;
+  std::unique_ptr<XmlReader> reader;
 
-  GIVEN("no document")
-  {
-    CHECK(document.RootElement() == nullptr);
-  }
+  CHECK_THROWS_AS(reader.reset(new XmlReader(NULL, 0)), std::exception);
 
   GIVEN("no method name")
   {
-    document.Parse("<methodCall/>");
+    std::string doc = "<methodCall/>";
+    reader.reset(new XmlReader(doc.data(), doc.size()));
   }
 
   GIVEN("empty method name")
   {
-    document.Parse("<methodCall><methodName/></methodCall>");
+    std::string doc = "<methodCall><methodName/></methodCall>";
+    reader.reset(new XmlReader(doc.data(), doc.size()));
   }
 
-  CHECK_THROWS_AS(Request(document.RootElement()), std::exception);
+  CHECK_THROWS_AS(reader->GetRequest(), std::exception);
 }
 
 TEST_CASE("only method name")
 {
-  tinyxml2::XMLDocument document;
+  std::string document;
 
   GIVEN("no params tag")
   {
-    document.Parse("<methodCall>"
-                   "<methodName>test</methodName>"
-                   "</methodCall>");
+    document = "<methodCall><methodName>test</methodName></methodCall>";
   }
 
   GIVEN("empty params tag")
   {
-    document.Parse("<methodCall>"
-                   "<methodName>test</methodName>"
-                   "<params/>"
-                   "</methodCall>");
+    document =
+      "<methodCall><methodName>test</methodName><params/></methodCall>";
   }
 
-  Request request(document.RootElement());
+  Request request = XmlReader(document.data(), document.size()).GetRequest();
   CHECK(request.GetMethodName() == "test");
   CHECK(request.GetParameters().empty());
   CHECK(ToXml(request) ==
@@ -88,15 +84,12 @@ TEST_CASE("only method name")
 
 TEST_CASE("one parameter")
 {
-  tinyxml2::XMLDocument document;
-  document.Parse("<methodCall>"
-                 "<methodName>test</methodName>"
-                 "<params>"
-                 "<param><value><int>47</int></value></param>"
-                 "</params>"
-                 "</methodCall>");
+  std::string document =
+    "<methodCall><methodName>test</methodName>"
+    "<params><param><value><int>47</int></value></param></params>"
+    "</methodCall>";
 
-  Request request(document.RootElement());
+  Request request = XmlReader(document.data(), document.size()).GetRequest();
   CHECK(request.GetMethodName() == "test");
   REQUIRE_FALSE(request.GetParameters().empty());
   CHECK(request.GetParameters()[0].IsInteger32());
@@ -113,17 +106,14 @@ TEST_CASE("one parameter")
 
 TEST_CASE("three parameters")
 {
-  tinyxml2::XMLDocument document;
-  document.Parse("<methodCall>"
-                 "<methodName>test</methodName>"
-                 "<params>"
-                 "<param><value><int>47</int></value></param>"
-                 "<param><value><int>46</int></value></param>"
-                 "<param><value><int>45</int></value></param>"
-                 "</params>"
-                 "</methodCall>");
+  std::string document =
+    "<methodCall><methodName>test</methodName><params>"
+    "<param><value><int>47</int></value></param>"
+    "<param><value><int>46</int></value></param>"
+    "<param><value><int>45</int></value></param>"
+    "</params></methodCall>";
 
-  Request request(document.RootElement());
+  Request request = XmlReader(document.data(), document.size()).GetRequest();
   CHECK(request.GetMethodName() == "test");
   REQUIRE(request.GetParameters().size() == 3);
   CHECK(request.GetParameters()[0].AsInteger32() == 47);

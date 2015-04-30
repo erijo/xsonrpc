@@ -1,5 +1,5 @@
 // This file is part of xsonrpc, an XML/JSON RPC library.
-// Copyright (C) 2015 Erik Johansson <erik@ejohansson.se>
+// Copyright (C) 2015 Erik Johansson <erik@ejohansson.se
 //
 // This library is free software; you can redistribute it and/or modify it
 // under the terms of the GNU Lesser General Public License as published by the
@@ -15,35 +15,24 @@
 // along with this library; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#ifndef XSONRPC_REQUEST_H
-#define XSONRPC_REQUEST_H
-
-#include "value.h"
-
-#include <deque>
-#include <string>
+#ifndef XSONRPC_READER_H
+#define XSONRPC_READER_H
 
 namespace xsonrpc {
 
-class Writer;
+class Request;
+class Response;
+class Value;
 
-class Request
+class Reader
 {
+protected:
+  virtual ~Reader() {}
+
 public:
-  typedef std::deque<Value> Parameters;
-
-  Request(std::string methodName, Parameters parameters);
-
-  const std::string& GetMethodName() const { return myMethodName; }
-  const Parameters& GetParameters() const { return myParameters; }
-
-  void Write(Writer& writer) const;
-  static void Write(const std::string& methodName, const Parameters& params,
-                    Writer& writer);
-
-private:
-  std::string myMethodName;
-  Parameters myParameters;
+  virtual Request GetRequest() = 0;
+  virtual Response GetResponse() = 0;
+  virtual Value GetValue() = 0;
 };
 
 } // namespace xsonrpc

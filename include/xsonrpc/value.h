@@ -25,10 +25,6 @@
 #include <unordered_map>
 #include <vector>
 
-namespace tinyxml2 {
-class XMLElement;
-}
-
 struct tm;
 
 namespace xsonrpc {
@@ -57,8 +53,6 @@ public:
     STRING,
     STRUCT
   };
-
-  explicit Value(const tinyxml2::XMLElement* element);
 
   Value() : myType(Type::NIL) {}
   Value(Array value);
@@ -131,7 +125,6 @@ public:
   template<typename T>
   inline const T& AsType() const;
 
-  static std::string GetTypeName(Type type);
   Type GetType() const { return myType; }
 
   void Write(Writer& writer) const;

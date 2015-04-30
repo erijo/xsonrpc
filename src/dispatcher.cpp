@@ -19,11 +19,13 @@
 
 #include <stdexcept>
 
+#if 0
 namespace {
 const char SYSTEM_MULTICALL[] = "system.multicall";
 const char METHOD_NAME[] = "methodName";
 const char PARAMS[] = "params";
 } // namespace
+#endif
 
 namespace xsonrpc {
 
@@ -35,11 +37,13 @@ MethodWrapper& MethodWrapper::SetHelpText(std::string help)
 
 Dispatcher::Dispatcher()
 {
+#if 0
   using namespace std::placeholders;
   AddMethod(SYSTEM_MULTICALL,
             std::bind(&Dispatcher::SystemMulticall, this, _1))
     .SetHelpText("Call multiple methods at once")
     .AddSignature(Value::Type::ARRAY, Value::Type::ARRAY);
+#endif
 }
 
 MethodWrapper& Dispatcher::AddMethod(
@@ -71,19 +75,21 @@ Response Dispatcher::Invoke(const std::string& name,
     return method->second(parameters);
   }
   catch (const Fault& fault) {
-    return fault;
+    return Response(fault.GetCode(), fault.GetString());
   }
   catch (const std::out_of_range&) {
-    return InvalidParametersFault();
+    InvalidParametersFault fault;
+    return Response(fault.GetCode(), fault.GetString());
   }
   catch (const std::exception& ex) {
-    return Fault(ex.what());
+    return Response(0, ex.what());
   }
   catch (...) {
-    return Fault("unknown error");
+    return Response(0, "unknown error");
   }
 }
 
+#if 0
 Value Dispatcher::SystemMulticall(const Request::Parameters& parameters) const
 {
   Value::Array result;
@@ -109,5 +115,6 @@ Value Dispatcher::SystemMulticall(const Request::Parameters& parameters) const
   }
   return result;
 }
+#endif
 
 } // namespace xsonrpc

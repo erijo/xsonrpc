@@ -17,11 +17,11 @@
 
 #include "fault.h"
 #include "value.h"
+#include "../src/xmlreader.h"
 #include "../src/xmlwriter.h"
 
 #include <catch.hpp>
 #include <memory>
-#include <tinyxml2.h>
 
 using namespace xsonrpc;
 
@@ -36,10 +36,11 @@ std::string ToXml(const Value& value)
 
 std::unique_ptr<Value> FromXml(const char* xml)
 {
-  tinyxml2::XMLDocument document;
-  document.Parse((std::string("<value>") + xml + "</value>").c_str());
-
-  return std::unique_ptr<Value>{new Value(document.RootElement())};
+  std::string document("<value>");
+  document += xml;
+  document += "</value>";
+  XmlReader reader(document.data(), document.size());
+  return std::unique_ptr<Value>{new Value(reader.GetValue())};
 }
 
 } // namespace

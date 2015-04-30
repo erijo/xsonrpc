@@ -15,45 +15,16 @@
 // along with this library; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#include "fault.h"
 #include "request.h"
-#include "util.h"
 #include "writer.h"
-
-#include <tinyxml2.h>
-
-namespace {
-
-const char METHOD_CALL_TAG[] = "methodCall";
-const char METHOD_NAME_TAG[] = "methodName";
-const char PARAMS_TAG[] = "params";
-const char PARAM_TAG[] = "param";
-
-} // namespace
 
 namespace xsonrpc {
 
-Request::Request(const tinyxml2::XMLElement* root)
+Request::Request(std::string methodName, Parameters parameters)
+  : myMethodName(std::move(methodName)),
+    myParameters(std::move(parameters))
 {
-  if (!root || !util::IsTag(*root, METHOD_CALL_TAG)) {
-    throw InvalidXmlRpcFault("missing method call element");
-  }
-
-  auto name = root->FirstChildElement(METHOD_NAME_TAG);
-  if (!name || util::HasEmptyText(*name)) {
-    throw InvalidXmlRpcFault("missing method name");
-  }
-  myMethodName = name->GetText();
-
-  auto params = root->FirstChildElement(PARAMS_TAG);
-  if (!params) {
-    return;
-  }
-
-  for (auto param = params->FirstChildElement(PARAM_TAG);
-       param; param = param->NextSiblingElement(PARAM_TAG)) {
-    myParameters.emplace_back(param->FirstChildElement());
-  }
+  // Empty
 }
 
 void Request::Write(Writer& writer) const

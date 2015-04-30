@@ -16,13 +16,13 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "server.h"
+#include "xmlreader.h"
 #include "xmlwriter.h"
 
 #include <sys/socket.h>
 #include <unistd.h>
 
 #include <microhttpd.h>
-#include <tinyxml2.h>
 #include <vector>
 
 namespace {
@@ -100,18 +100,10 @@ void Server::HandleRequest(MHD_Connection* connection, void* connectionCls)
   auto info = static_cast<ConnectionInfo*>(connectionCls);
 
   try {
-    tinyxml2::XMLDocument document;
-    auto error = document.Parse(info->Buffer.data(), info->Buffer.size());
-    if (error == tinyxml2::XML_CAN_NOT_CONVERT_TEXT) {
-      throw InvalidCharacterFault();
-    }
-    else if (error != tinyxml2::XML_NO_ERROR) {
-      throw NotWellFormedFault();
-    }
+    XmlReader reader(info->Buffer.data(), info->Buffer.size());
     info->Buffer.clear();
 
-    Request request{document.RootElement()};
-    document.Clear();
+    Request request = reader.GetRequest();
     auto response = myDispatcher.Invoke(
       request.GetMethodName(), request.GetParameters());
     response.Write(info->Writer);

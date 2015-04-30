@@ -39,8 +39,11 @@ public:
   void EndRequest() override;
   void StartParameter() override;
   void EndParameter() override;
-  void StartResponse(bool isFault) override;
-  void EndResponse(bool isFault) override;
+  void StartResponse() override;
+  void EndResponse() override;
+  void StartFaultResponse() override;
+  void EndFaultResponse() override;
+  void WriteFault(int32_t code, const std::string& string) override;
   void StartArray() override;
   void EndArray() override;
   void StartStruct() override;

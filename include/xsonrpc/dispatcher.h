@@ -18,6 +18,7 @@
 #ifndef XSONRPC_DISPATCHER_H
 #define XSONRPC_DISPATCHER_H
 
+#include "fault.h"
 #include "request.h"
 #include "response.h"
 #include "value.h"
@@ -225,8 +226,6 @@ private:
       };
     return AddMethod(std::move(name), std::move(realMethod));
   }
-
-  Value SystemMulticall(const Request::Parameters& parameters) const;
 
   std::map<std::string, MethodWrapper> myMethods;
 };

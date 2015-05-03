@@ -27,16 +27,20 @@ struct MHD_Daemon;
 
 namespace xsonrpc {
 
+class FormatHandler;
+
 class Server
 {
 public:
-  Server(unsigned short port, std::string uri = "/RPC2");
+  Server(unsigned short port);
   ~Server();
 
   Server(const Server&) = delete;
   Server& operator=(const Server&) = delete;
   Server(Server&&) = delete;
   Server& operator=(Server&&) = delete;
+
+  void AddFormatHandler(FormatHandler& formatHandler);
 
   void Run();
   int GetFileDescriptor();
@@ -65,9 +69,9 @@ private:
     MHD_Connection* connection, void** connectionCls,
     int requestTerminationCode);
 
-  std::string myUri;
   MHD_Daemon* myDaemon;
   Dispatcher myDispatcher;
+  std::vector<FormatHandler*> myFormatHandlers;
 };
 
 } // namespace xsonrpc

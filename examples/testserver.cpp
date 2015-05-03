@@ -16,6 +16,7 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "xsonrpc/server.h"
+#include "xsonrpc/xmlformathandler.h"
 
 #include <numeric>
 #include <poll.h>
@@ -65,6 +66,9 @@ int main()
 {
   Math math;
   xsonrpc::Server server(8080);
+
+  xsonrpc::XmlFormatHandler xmlFormatHandler;
+  server.AddFormatHandler(xmlFormatHandler);
 
   auto& dispatcher = server.GetDispatcher();
   dispatcher.AddMethod("add", &Math::Add, math);

@@ -25,12 +25,12 @@ namespace xsonrpc {
 
 using namespace xml;
 
-const char* XmlWriter::GetData() const
+const char* XmlWriter::GetData()
 {
   return myPrinter.CStr();
 }
 
-size_t XmlWriter::GetSize() const
+size_t XmlWriter::GetSize()
 {
   return myPrinter.CStrSize() - 1;
 }

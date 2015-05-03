@@ -1,5 +1,5 @@
 // This file is part of xsonrpc, an XML/JSON RPC library.
-// Copyright (C) 2015 Erik Johansson <erik@ejohansson.se
+// Copyright (C) 2015 Erik Johansson <erik@ejohansson.se>
 //
 // This library is free software; you can redistribute it and/or modify it
 // under the terms of the GNU Lesser General Public License as published by the
@@ -15,25 +15,42 @@
 // along with this library; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#ifndef XSONRPC_READER_H
-#define XSONRPC_READER_H
+#include "xmlformathandler.h"
+#include "xmlreader.h"
+#include "xmlwriter.h"
+
+namespace {
+
+const char TEXT_XML[] = "text/xml";
+
+} // namespace
 
 namespace xsonrpc {
 
-class Request;
-class Response;
-class Value;
-
-class Reader
+XmlFormatHandler::XmlFormatHandler(std::string requestPath)
+  : myRequestPath(std::move(requestPath))
 {
-public:
-  virtual ~Reader() {}
+}
 
-  virtual Request GetRequest() = 0;
-  virtual Response GetResponse() = 0;
-  virtual Value GetValue() = 0;
-};
+bool XmlFormatHandler::CanHandleRequest(
+  const std::string& path, const std::string& contentType)
+{
+  return path == myRequestPath && contentType == TEXT_XML;
+}
+
+std::string XmlFormatHandler::GetContentType()
+{
+  return TEXT_XML;
+}
+
+std::unique_ptr<Reader> XmlFormatHandler::CreateReader(std::string data)
+{
+  return std::unique_ptr<Reader>(new XmlReader(data.data(), data.size()));
+}
+
+std::unique_ptr<Writer> XmlFormatHandler::CreateWriter()
+{
+  return std::unique_ptr<Writer>(new XmlWriter());
+}
 
 } // namespace xsonrpc
-
-#endif

@@ -18,9 +18,10 @@
 #include "client.h"
 
 #include "fault.h"
+#include "formathandler.h"
+#include "reader.h"
 #include "response.h"
-#include "xmlreader.h"
-#include "xmlwriter.h"
+#include "writer.h"
 
 #include <curl/curl.h>
 #include <curl/easy.h>
@@ -48,8 +49,10 @@ void Client::GlobalInit()
 }
 
 Client::Client(const std::string& host, unsigned short port,
+               FormatHandler& formatHandler,
                const std::string& uri)
-  : myHandle(curl_easy_init())
+  : myFormatHandler(formatHandler),
+    myHandle(curl_easy_init())
 {
   if (!myHandle) {
     throw std::runtime_error("client: failed to initialize cURL handle");
@@ -72,15 +75,17 @@ Client::~Client()
 Value Client::CallInternal(const std::string& methodName,
                            const Request::Parameters& params)
 {
-  XmlWriter writer;
-  Request::Write(methodName, params, writer);
+  auto writer = myFormatHandler.CreateWriter();
+  Request::Write(methodName, params, *writer);
 
   curl_easy_setopt(myHandle, CURLOPT_POSTFIELDSIZE_LARGE,
-                   static_cast<curl_off_t>(writer.GetSize()));
-  curl_easy_setopt(myHandle, CURLOPT_POSTFIELDS, writer.GetData());
+                   static_cast<curl_off_t>(writer->GetSize()));
+  curl_easy_setopt(myHandle, CURLOPT_POSTFIELDS, writer->GetData());
 
+  const std::string contentType =
+    "Content-Type: " + myFormatHandler.GetContentType();
   std::unique_ptr<curl_slist, void(*)(curl_slist*)> headers(
-    curl_slist_append(NULL, "Content-Type: text/xml"), &curl_slist_free_all);
+    curl_slist_append(NULL, contentType.c_str()), &curl_slist_free_all);
   curl_easy_setopt(myHandle, CURLOPT_HTTPHEADER, headers.get());
 
   std::string buffer;
@@ -97,8 +102,8 @@ Value Client::CallInternal(const std::string& methodName,
     throw std::runtime_error("client: HTTP request failed");
   }
 
-  XmlReader reader(buffer.data(), buffer.size());
-  Response response = reader.GetResponse();
+  auto reader = myFormatHandler.CreateReader(std::move(buffer));
+  Response response = reader->GetResponse();
   response.ThrowIfFault();
   return std::move(response.GetResult());
 }

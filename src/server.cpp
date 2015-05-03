@@ -16,18 +16,20 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "server.h"
-#include "xmlreader.h"
-#include "xmlwriter.h"
+
+#include "formathandler.h"
+#include "reader.h"
+#include "writer.h"
 
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <cstring>
 #include <microhttpd.h>
 #include <vector>
 
 namespace {
 
-const char TEXT_XML[] = "text/xml";
 const size_t MAX_REQUEST_SIZE = 16 * 1024;
 
 struct HttpError
@@ -37,16 +39,16 @@ struct HttpError
 
 struct ConnectionInfo
 {
-  std::vector<char> Buffer;
-  xsonrpc::XmlWriter Writer;
+  std::string Buffer;
+  xsonrpc::FormatHandler* FormatHandler;
+  std::unique_ptr<xsonrpc::Writer> Writer;
 };
 
 } // namespace
 
 namespace xsonrpc {
 
-Server::Server(unsigned short port, std::string uri)
-  : myUri(std::move(uri))
+Server::Server(unsigned short port)
 {
   myDaemon = MHD_start_daemon(
 #if MHD_VERSION >= 0x00093100
@@ -65,6 +67,11 @@ Server::Server(unsigned short port, std::string uri)
 Server::~Server()
 {
   MHD_stop_daemon(myDaemon);
+}
+
+void Server::AddFormatHandler(FormatHandler& formatHandler)
+{
+  myFormatHandlers.push_back(&formatHandler);
 }
 
 void Server::Run()
@@ -98,33 +105,35 @@ void Server::OnReadableFileDescriptor()
 void Server::HandleRequest(MHD_Connection* connection, void* connectionCls)
 {
   auto info = static_cast<ConnectionInfo*>(connectionCls);
+  info->Writer = info->FormatHandler->CreateWriter();
 
   try {
-    XmlReader reader(info->Buffer.data(), info->Buffer.size());
-    info->Buffer.clear();
+    auto reader = info->FormatHandler->CreateReader(std::move(info->Buffer));
+    Request request = reader->GetRequest();
+    reader.reset();
 
-    Request request = reader.GetRequest();
     auto response = myDispatcher.Invoke(
       request.GetMethodName(), request.GetParameters());
-    response.Write(info->Writer);
+    response.Write(*info->Writer);
   }
   catch (const Fault& ex) {
-    Response(ex).Write(info->Writer);
+    Response(ex).Write(*info->Writer);
   }
 
 #if MHD_VERSION >= 0x00090500
   auto response = MHD_create_response_from_buffer(
-    info->Writer.GetSize(),
-    const_cast<char*>(info->Writer.GetData()),
+    info->Writer->GetSize(),
+    const_cast<char*>(info->Writer->GetData()),
     MHD_RESPMEM_PERSISTENT);
 #else
   auto response = MHD_create_response_from_data(
-    info->Writer.GetSize(),
-    const_cast<char*>(info->Writer.GetData()()),
+    info->Writer->GetSize(),
+    const_cast<char*>(info->Writer->GetData()),
     false, false);
 #endif
 
-  MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE, TEXT_XML);
+  MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE,
+                          info->FormatHandler->GetContentType().c_str());
   MHD_add_response_header(response, MHD_HTTP_HEADER_SERVER,
                           "xsonrpc/" XSONRPC_VERSION);
   MHD_queue_response(connection, MHD_HTTP_OK, response);
@@ -169,12 +178,18 @@ int Server::AccessHandler(
     if (strcmp(method, "POST") != 0) {
       throw HttpError{MHD_HTTP_METHOD_NOT_ALLOWED};
     }
-    if (url != myUri) {
-      throw HttpError{MHD_HTTP_NOT_FOUND};
+
+    auto header = MHD_lookup_connection_value(
+      connection, MHD_HEADER_KIND, MHD_HTTP_HEADER_CONTENT_TYPE);
+    const std::string contentType(header ? header : "");
+    for (auto handler : myFormatHandlers) {
+      if (handler->CanHandleRequest(url, contentType)) {
+        *connectionCls = new ConnectionInfo{{}, handler, {}};
+        return MHD_YES;
+      }
     }
 
-    *connectionCls = new ConnectionInfo;
-    return MHD_YES;
+    throw HttpError{MHD_HTTP_NOT_FOUND};
   }
   catch (const HttpError& httpError) {
     auto response = MHD_create_response_from_data(0, nullptr, false, false);

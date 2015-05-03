@@ -9,6 +9,7 @@ add_library(xsonrpc SHARED
   server.cpp
   util.cpp
   value.cpp
+  xmlformathandler.cpp
   xmlreader.cpp
   xmlwriter.cpp
 )

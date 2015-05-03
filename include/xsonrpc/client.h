@@ -26,12 +26,15 @@
 
 namespace xsonrpc {
 
+class FormatHandler;
+
 class Client
 {
 public:
   static void GlobalInit();
 
   Client(const std::string& host, unsigned short port,
+         FormatHandler& formatHandler,
          const std::string& uri = "/RPC2");
   ~Client();
 
@@ -74,6 +77,7 @@ private:
   }
   Value CallInternal(const std::string& methodName,
                      const Request::Parameters& params);
+  FormatHandler& myFormatHandler;
   void* myHandle;
 };
 

@@ -29,10 +29,9 @@ class XmlWriter final : public Writer
 public:
   ~XmlWriter() = default;
 
-  const char* GetData() const;
-  size_t GetSize() const;
-
   // Writer
+  const char* GetData() override;
+  size_t GetSize() override;
   void StartDocument() override;
   void EndDocument() override;
   void StartRequest(const std::string& methodName) override;

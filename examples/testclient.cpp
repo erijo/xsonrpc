@@ -16,6 +16,7 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "xsonrpc/client.h"
+#include "xsonrpc/xmlformathandler.h"
 
 #include <cstring>
 #include <iostream>
@@ -25,7 +26,8 @@ int main(int argc, char** argv)
 {
   xsonrpc::Client::GlobalInit();
 
-  xsonrpc::Client client("localhost", 8080);
+  xsonrpc::XmlFormatHandler xmlFormatHandler;
+  xsonrpc::Client client("localhost", 8080, xmlFormatHandler);
 
   std::cout << "add: 3+2=" << client.Call("add", 3, 2) << "\n";
   std::cout << "concat: " << client.Call("concat", "Hello, ", "World!")

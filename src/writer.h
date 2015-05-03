@@ -26,10 +26,14 @@ namespace xsonrpc {
 
 class Writer
 {
-protected:
+public:
   virtual ~Writer() {}
 
-public:
+  // Result
+  virtual const char* GetData() = 0;
+  virtual size_t GetSize() = 0;
+
+  // Document
   virtual void StartDocument() = 0;
   virtual void EndDocument() = 0;
 

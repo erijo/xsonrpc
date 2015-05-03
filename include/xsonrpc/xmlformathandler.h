@@ -1,5 +1,5 @@
 // This file is part of xsonrpc, an XML/JSON RPC library.
-// Copyright (C) 2015 Erik Johansson <erik@ejohansson.se
+// Copyright (C) 2015 Erik Johansson <erik@ejohansson.se>
 //
 // This library is free software; you can redistribute it and/or modify it
 // under the terms of the GNU Lesser General Public License as published by the
@@ -15,23 +15,27 @@
 // along with this library; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#ifndef XSONRPC_READER_H
-#define XSONRPC_READER_H
+#ifndef XSONRPC_XMLFORMATHANDLER_H
+#define XSONRPC_XMLFORMATHANDLER_H
+
+#include "formathandler.h"
 
 namespace xsonrpc {
 
-class Request;
-class Response;
-class Value;
-
-class Reader
+class XmlFormatHandler : public FormatHandler
 {
 public:
-  virtual ~Reader() {}
+  explicit XmlFormatHandler(std::string requestPath = "/RPC2");
 
-  virtual Request GetRequest() = 0;
-  virtual Response GetResponse() = 0;
-  virtual Value GetValue() = 0;
+  // FormatHandler
+  bool CanHandleRequest(const std::string& path,
+                        const std::string& contentType) override;
+  std::string GetContentType() override;
+  std::unique_ptr<Reader> CreateReader(std::string data) override;
+  std::unique_ptr<Writer> CreateWriter() override;
+
+private:
+  std::string myRequestPath;
 };
 
 } // namespace xsonrpc

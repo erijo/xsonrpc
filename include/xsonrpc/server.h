@@ -40,7 +40,7 @@ public:
   Server(Server&&) = delete;
   Server& operator=(Server&&) = delete;
 
-  void AddFormatHandler(FormatHandler& formatHandler);
+  void RegisterFormatHandler(FormatHandler& formatHandler);
 
   void Run();
   int GetFileDescriptor();

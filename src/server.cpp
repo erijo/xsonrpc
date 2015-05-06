@@ -69,7 +69,7 @@ Server::~Server()
   MHD_stop_daemon(myDaemon);
 }
 
-void Server::AddFormatHandler(FormatHandler& formatHandler)
+void Server::RegisterFormatHandler(FormatHandler& formatHandler)
 {
   myFormatHandlers.push_back(&formatHandler);
 }
@@ -117,7 +117,7 @@ void Server::HandleRequest(MHD_Connection* connection, void* connectionCls)
     response.Write(*info->Writer);
   }
   catch (const Fault& ex) {
-    Response(ex).Write(*info->Writer);
+    Response(ex.GetCode(), ex.GetString()).Write(*info->Writer);
   }
 
 #if MHD_VERSION >= 0x00090500

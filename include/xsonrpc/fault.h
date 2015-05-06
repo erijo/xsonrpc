@@ -18,18 +18,28 @@
 #ifndef XSONRPC_FAULT_H
 #define XSONRPC_FAULT_H
 
-#include "value.h"
-
 #include <cassert>
+#include <cstdint>
 #include <exception>
+#include <string>
 
 namespace xsonrpc {
 
 class Fault : public std::exception
 {
 public:
-  const int32_t RESERVED_CODE_MIN = -32768;
-  const int32_t RESERVED_CODE_MAX = -32000;
+  enum ReservedCodes : int32_t
+  {
+    RESERVED_CODE_MIN = -32768,
+    RESERVED_CODE_MAX = -32000,
+    SERVER_ERROR_CODE_MIN = -32099,
+    SERVER_ERROR_CODE_MAX = -32000,
+    PARSE_ERROR = -32700,
+    INVALID_REQUEST = -32600,
+    METHOD_NOT_FOUND = -32601,
+    INVALID_PARAMETERS = -32602,
+    INTERNAL_ERROR = -32603,
+  };
 
   Fault(std::string faultString, int32_t faultCode = 0)
     : myFaultString(std::move(faultString)),
@@ -50,8 +60,6 @@ public:
     return myFaultString.c_str();
   }
 
-  operator Value() const;
-
 private:
   Fault(int32_t faultCode, std::string faultString)
     : myFaultString(std::move(faultString)),
@@ -61,60 +69,61 @@ private:
   std::string myFaultString;
   int32_t myFaultCode;
 
-  friend class NotWellFormedFault;
-  friend class InvalidCharacterFault;
-  friend class InvalidXmlRpcFault;
-  friend class MethodNotFoundFault;
-  friend class InvalidParametersFault;
-  friend class InternalFault;
+  friend class PreDefinedFault;
 };
 
-class NotWellFormedFault : public Fault
+class PreDefinedFault : public Fault
 {
-public:
-  static const int32_t CODE;
-  NotWellFormedFault()
-    : Fault(CODE, "XML document not well formed") {}
+protected:
+  PreDefinedFault(int32_t faultCode, std::string faultString)
+    : Fault(faultCode, std::move(faultString)) {}
+
+  friend class Response;
 };
 
-class InvalidCharacterFault : public Fault
+class ParseErrorFault : public PreDefinedFault
 {
 public:
-  static const int32_t CODE;
-  InvalidCharacterFault()
-    : Fault(CODE, "Invalid character for encoding") {}
+  ParseErrorFault(std::string string = "Parse error")
+    : PreDefinedFault(PARSE_ERROR, std::move(string)) {}
 };
 
-class InvalidXmlRpcFault : public Fault
+class InvalidRequestFault : public PreDefinedFault
 {
 public:
-  static const int32_t CODE;
-  InvalidXmlRpcFault(const std::string& error)
-    : Fault(CODE, "Invalid XML-RPC: " + error) {}
+  InvalidRequestFault(std::string string = "Invalid request")
+    : PreDefinedFault(INVALID_REQUEST, std::move(string)) {}
 };
 
-class MethodNotFoundFault : public Fault
+class MethodNotFoundFault : public PreDefinedFault
 {
 public:
-  static const int32_t CODE;
-  MethodNotFoundFault(const std::string& methodName)
-    : Fault(CODE, "No such method " + methodName) {}
+  MethodNotFoundFault(std::string string = "Method not found")
+    : PreDefinedFault(METHOD_NOT_FOUND, std::move(string)) {}
 };
 
-class InvalidParametersFault : public Fault
+class InvalidParametersFault : public PreDefinedFault
 {
 public:
-  static const int32_t CODE;
-  InvalidParametersFault()
-    : Fault(CODE, "Invalid parameters") {}
+  InvalidParametersFault(std::string string = "Invalid parameters")
+    : PreDefinedFault(INVALID_PARAMETERS, std::move(string)) {}
 };
 
-class InternalFault : public Fault
+class InternalErrorFault : public PreDefinedFault
 {
 public:
-  static const int32_t CODE;
-  InternalFault(std::string error)
-    : Fault(CODE, std::move(error)) {}
+  InternalErrorFault(std::string string = "Internal error")
+    : PreDefinedFault(INTERNAL_ERROR, std::move(string)) {}
+};
+
+class ServerErrorFault : public PreDefinedFault
+{
+public:
+  ServerErrorFault(int32_t code, std::string string)
+    : PreDefinedFault(code, std::move(string))
+  {
+    assert(code >= SERVER_ERROR_CODE_MIN && code <= SERVER_ERROR_CODE_MAX);
+  }
 };
 
 } // namespace xsonrpc

@@ -57,8 +57,34 @@ void Response::ThrowIfFault() const
     return;
   }
 
-  // TODO: use myFaultCode
-  throw Fault(myFaultString);
+  switch (static_cast<Fault::ReservedCodes>(myFaultCode)) {
+    case Fault::RESERVED_CODE_MIN:
+    case Fault::RESERVED_CODE_MAX:
+    case Fault::SERVER_ERROR_CODE_MIN:
+      break;
+    case Fault::PARSE_ERROR:
+      throw ParseErrorFault(myFaultString);
+    case Fault::INVALID_REQUEST:
+      throw InvalidRequestFault(myFaultString);
+    case Fault::METHOD_NOT_FOUND:
+      throw MethodNotFoundFault(myFaultString);
+    case Fault::INVALID_PARAMETERS:
+      throw InvalidParametersFault(myFaultString);
+    case Fault::INTERNAL_ERROR:
+      throw InternalErrorFault(myFaultString);
+  }
+
+  if (myFaultCode >= Fault::SERVER_ERROR_CODE_MIN
+      && myFaultCode <= Fault::SERVER_ERROR_CODE_MAX) {
+    throw ServerErrorFault(myFaultCode, myFaultString);
+  }
+
+  if (myFaultCode >= Fault::RESERVED_CODE_MIN
+      && myFaultCode <= Fault::RESERVED_CODE_MAX) {
+    throw PreDefinedFault(myFaultCode, myFaultString);
+  }
+
+  throw Fault(myFaultString, myFaultCode);
 }
 
 } // namespace xsonrpc

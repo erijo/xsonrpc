@@ -31,11 +31,8 @@ using namespace xml;
 XmlReader::XmlReader(const char* data, size_t size)
 {
   auto error = myDocument.Parse(data, size);
-  if (error == tinyxml2::XML_CAN_NOT_CONVERT_TEXT) {
-    throw InvalidCharacterFault();
-  }
-  else if (error != tinyxml2::XML_NO_ERROR) {
-    throw NotWellFormedFault();
+  if (error != tinyxml2::XML_NO_ERROR) {
+    throw ParseErrorFault("Parse error: " + std::to_string(error));
   }
 }
 
@@ -44,12 +41,12 @@ Request XmlReader::GetRequest()
   auto root = myDocument.RootElement();
 
   if (!root || !util::IsTag(*root, METHOD_CALL_TAG)) {
-    throw InvalidXmlRpcFault("missing method call element");
+    throw InvalidRequestFault("Missing method call element");
   }
 
   auto name = root->FirstChildElement(METHOD_NAME_TAG);
   if (!name || util::HasEmptyText(*name)) {
-    throw InvalidXmlRpcFault("missing method name");
+    throw InvalidRequestFault("Missing method name");
   }
 
   auto params = root->FirstChildElement(PARAMS_TAG);
@@ -70,7 +67,7 @@ Response XmlReader::GetResponse()
   auto root = myDocument.RootElement();
 
   if (!root || !util::IsTag(*root, METHOD_RESPONSE_TAG)) {
-    throw InvalidXmlRpcFault("missing method response element");
+    throw InvalidRequestFault("Missing method response element");
   }
 
   bool isFault;
@@ -85,7 +82,7 @@ Response XmlReader::GetResponse()
   }
 
   if (!value) {
-    throw InvalidXmlRpcFault("missing param or fault element");
+    throw InvalidRequestFault("Missing response param or fault element");
   }
 
   auto result = GetValue(value->FirstChildElement());
@@ -94,16 +91,16 @@ Response XmlReader::GetResponse()
   }
 
   if (!result.IsStruct()) {
-    throw InvalidXmlRpcFault("fault is not a struct");
+    throw InvalidRequestFault("Response fault is not a struct");
   }
   auto& s = result.AsStruct();
   auto code = s.find(FAULT_CODE_NAME);
   if (code == s.end() || !code->second.IsInteger32()) {
-    throw InvalidXmlRpcFault("missing or invalid fault code");
+    throw InvalidRequestFault("Missing or invalid response fault code");
   }
   auto string = s.find(FAULT_STRING_NAME);
   if (string == s.end() || !string->second.IsString()) {
-    throw InvalidXmlRpcFault("missing or invalid fault string");
+    throw InvalidRequestFault("Missing or invalid response fault string");
   }
   return Response(code->second.AsInteger32(), string->second.AsString());
 }
@@ -116,18 +113,18 @@ Value XmlReader::GetValue()
 Value XmlReader::GetValue(tinyxml2::XMLElement* element)
 {
   if (!element || !util::IsTag(*element, VALUE_TAG)) {
-    throw InvalidXmlRpcFault("missing value element");
+    throw InvalidRequestFault("Missing value element");
   }
 
   auto value = element->FirstChildElement();
   if (!value) {
-    throw InvalidXmlRpcFault("empty value element");
+    throw InvalidRequestFault("Empty value element");
   }
 
   if (util::IsTag(*value, ARRAY_TAG)) {
     auto data = value->FirstChildElement(DATA_TAG);
     if (!data) {
-      throw InvalidXmlRpcFault("missing data element in array");
+      throw InvalidRequestFault("Missing data element in array");
     }
     Value::Array array;
     for (auto child = data->FirstChildElement();
@@ -139,28 +136,28 @@ Value XmlReader::GetValue(tinyxml2::XMLElement* element)
   else if (util::IsTag(*value, BASE_64_TAG)) {
     auto text = value->GetText();
     if (!text) {
-      throw InvalidXmlRpcFault("value is not base64");
+      throw InvalidRequestFault("Value is not base64");
     }
     return Value(util::Base64Decode(text, strlen(text)));
   }
   else if (util::IsTag(*value, BOOLEAN_TAG)) {
     bool data;
     if (value->QueryBoolText(&data) != tinyxml2::XML_SUCCESS) {
-      throw InvalidXmlRpcFault("value is not a boolean");
+      throw InvalidRequestFault("Value is not a boolean");
     }
     return Value(data);
   }
   else if (util::IsTag(*value, DATE_TIME_TAG)) {
     Value::DateTime dateTime;
     if (!util::ParseIso8601DateTime(value->GetText(), dateTime)) {
-      throw InvalidXmlRpcFault("value is not a date/time");
+      throw InvalidRequestFault("Value is not a date/time");
     }
     return Value(dateTime);
   }
   else if (util::IsTag(*value, DOUBLE_TAG)) {
     double data;
     if (value->QueryDoubleText(&data) != tinyxml2::XML_SUCCESS) {
-      throw InvalidXmlRpcFault("value is not a double");
+      throw InvalidRequestFault("Value is not a double");
     }
     return Value(data);
   }
@@ -168,13 +165,13 @@ Value XmlReader::GetValue(tinyxml2::XMLElement* element)
            || util::IsTag(*value, INTEGER_INT_TAG)) {
     int32_t data;
     if (value->QueryIntText(&data) != tinyxml2::XML_SUCCESS) {
-      throw InvalidXmlRpcFault("value is not a 32-bit integer");
+      throw InvalidRequestFault("Value is not a 32-bit integer");
     }
     return Value(data);
   }
   else if (util::IsTag(*value, INTEGER_64_TAG)) {
     if (!value->GetText()) {
-      throw InvalidXmlRpcFault("value is not a 64-bit integer");
+      throw InvalidRequestFault("Value is not a 64-bit integer");
     }
     int64_t data = std::stoll(value->GetText());
     return Value(data);
@@ -192,7 +189,7 @@ Value XmlReader::GetValue(tinyxml2::XMLElement* element)
          member; member = member->NextSiblingElement(MEMBER_TAG)) {
       auto name = member->FirstChildElement(NAME_TAG);
       if (!name || util::HasEmptyText(*name)) {
-        throw InvalidXmlRpcFault("missing name element in struct");
+        throw InvalidRequestFault("Missing name element in struct");
       }
       data.emplace(name->GetText(),
                    GetValue(member->LastChildElement(VALUE_TAG)));
@@ -200,7 +197,7 @@ Value XmlReader::GetValue(tinyxml2::XMLElement* element)
     return Value(std::move(data));
   }
   else {
-    throw InvalidXmlRpcFault("invalid type");
+    throw InvalidRequestFault("Invalid type");
   }
 }
 

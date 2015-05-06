@@ -67,8 +67,8 @@ int main()
   Math math;
   xsonrpc::Server server(8080);
 
-  xsonrpc::XmlFormatHandler xmlFormatHandler;
-  server.AddFormatHandler(xmlFormatHandler);
+  xsonrpc::XmlFormatHandler xmlFormatHandler(server.GetDispatcher());
+  server.RegisterFormatHandler(xmlFormatHandler);
 
   auto& dispatcher = server.GetDispatcher();
   dispatcher.AddMethod("add", &Math::Add, math);

@@ -113,8 +113,6 @@ struct StdFunction<MethodType, true>
 class Dispatcher
 {
 public:
-  Dispatcher();
-
   MethodWrapper& AddMethod(
     std::string name, MethodWrapper::Method method);
 

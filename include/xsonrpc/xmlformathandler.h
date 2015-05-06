@@ -19,13 +19,19 @@
 #define XSONRPC_XMLFORMATHANDLER_H
 
 #include "formathandler.h"
+#include "request.h"
+#include "value.h"
 
 namespace xsonrpc {
+
+class Dispatcher;
 
 class XmlFormatHandler : public FormatHandler
 {
 public:
-  explicit XmlFormatHandler(std::string requestPath = "/RPC2");
+  XmlFormatHandler();
+  explicit XmlFormatHandler(Dispatcher& dispather,
+                            std::string requestPath = "/RPC2");
 
   // FormatHandler
   bool CanHandleRequest(const std::string& path,
@@ -35,6 +41,8 @@ public:
   std::unique_ptr<Writer> CreateWriter() override;
 
 private:
+  Value SystemMulticall(const Request::Parameters& parameters) const;
+  Dispatcher* myDispather;
   std::string myRequestPath;
 };
 

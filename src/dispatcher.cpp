@@ -19,31 +19,12 @@
 
 #include <stdexcept>
 
-#if 0
-namespace {
-const char SYSTEM_MULTICALL[] = "system.multicall";
-const char METHOD_NAME[] = "methodName";
-const char PARAMS[] = "params";
-} // namespace
-#endif
-
 namespace xsonrpc {
 
 MethodWrapper& MethodWrapper::SetHelpText(std::string help)
 {
   myHelpText = std::move(help);
   return *this;
-}
-
-Dispatcher::Dispatcher()
-{
-#if 0
-  using namespace std::placeholders;
-  AddMethod(SYSTEM_MULTICALL,
-            std::bind(&Dispatcher::SystemMulticall, this, _1))
-    .SetHelpText("Call multiple methods at once")
-    .AddSignature(Value::Type::ARRAY, Value::Type::ARRAY);
-#endif
 }
 
 MethodWrapper& Dispatcher::AddMethod(
@@ -88,33 +69,5 @@ Response Dispatcher::Invoke(const std::string& name,
     return Response(0, "unknown error");
   }
 }
-
-#if 0
-Value Dispatcher::SystemMulticall(const Request::Parameters& parameters) const
-{
-  Value::Array result;
-  for (auto& call : parameters.at(0).AsArray()) {
-    if (call[METHOD_NAME].AsString() == SYSTEM_MULTICALL) {
-      throw InternalFault("Recursive multicall not allowed");
-    }
-    try {
-      auto& array = call[PARAMS].AsArray();
-      Request::Parameters callParams(array.begin(), array.end());
-      auto retval = Invoke(call[METHOD_NAME].AsString(), callParams);
-
-      if (retval.IsFault()) {
-        result.push_back(std::move(retval.GetResult()));
-      }
-      else {
-        result.push_back(Value::Array{std::move(retval.GetResult())});
-      }
-    }
-    catch (const Fault& ex) {
-      result.push_back(ex);
-    }
-  }
-  return result;
-}
-#endif
 
 } // namespace xsonrpc

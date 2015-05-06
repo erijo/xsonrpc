@@ -3,7 +3,6 @@ add_library(xsonrpc SHARED
 
   client.cpp
   dispatcher.cpp
-  fault.cpp
   request.cpp
   response.cpp
   server.cpp

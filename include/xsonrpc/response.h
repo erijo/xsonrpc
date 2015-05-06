@@ -33,7 +33,6 @@ public:
   void Write(Writer& writer) const;
 
   Value& GetResult() { return myResult; }
-  const Value& GetResult() const { return myResult; }
   bool IsFault() const { return myIsFault; }
   void ThrowIfFault() const;
 

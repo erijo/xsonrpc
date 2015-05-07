@@ -27,10 +27,31 @@
 namespace {
 
 const char TEXT_XML[] = "text/xml";
+
 const char SYSTEM_MULTICALL[] = "system.multicall";
 const char SYSTEM_LISTMETHODS[] = "system.listMethods";
 const char SYSTEM_METHODSIGNATURE[] = "system.methodSignature";
 const char SYSTEM_METHODHELP[] = "system.methodHelp";
+const char SYSTEM_GETCAPABILITIES[] = "system.getCapabilities";
+
+const char SIGNATURE_UNDEFINED[] = "undef";
+
+const char SPEC_URL[] = "specUrl";
+const char SPEC_VERSION[] = "specVersion";
+
+const char CAPABILITY_XMLRPC[] = "xmlrpc";
+const char CAPABILITY_XMLRPC_URL[] = "http://www.xmlrpc.com/spec";
+const int32_t CAPABILITY_XMLRPC_VERSION = 1;
+
+const char CAPABILITY_INTROSPECT[] = "introspect";
+const char CAPABILITY_INTROSPECT_URL[] =
+    "http://xmlrpc-c.sourceforge.net/xmlrpc-c/introspection.html";
+const int32_t CAPABILITY_INTROSPECT_VERSION = 1;
+
+const char CAPABILITY_FAULTS_INTEROP[] = "faults_interop";
+const char CAPABILITY_FAULTS_INTEROP_URL[] =
+    "http://xmlrpc-epi.sourceforge.net/specs/rfc.fault_codes.php";
+const int32_t CAPABILITY_FAULTS_INTEROP_VERSION = 20010516;
 
 } // namespace
 
@@ -46,10 +67,23 @@ XmlFormatHandler::XmlFormatHandler(
   : myDispather(&dispatcher),
     myRequestPath(std::move(requestPath))
 {
+  AddCapability(CAPABILITY_XMLRPC,
+                CAPABILITY_XMLRPC_URL,
+                CAPABILITY_XMLRPC_VERSION);
+
+  AddCapability(CAPABILITY_FAULTS_INTEROP,
+                CAPABILITY_FAULTS_INTEROP_URL,
+                CAPABILITY_FAULTS_INTEROP_VERSION);
+
   myDispather->AddMethod(
     SYSTEM_MULTICALL, &XmlFormatHandler::SystemMulticall, *this)
     .SetHelpText("Call multiple methods at once")
     .AddSignature(Value::Type::ARRAY, Value::Type::ARRAY);
+
+  myDispather->AddMethod(
+    SYSTEM_GETCAPABILITIES, &XmlFormatHandler::SystemGetCapabilities, *this)
+    .SetHelpText("Get server capabilities")
+    .AddSignature(Value::Type::STRUCT);
 }
 
 void XmlFormatHandler::EnableIntrospection()
@@ -71,6 +105,25 @@ void XmlFormatHandler::EnableIntrospection()
     SYSTEM_METHODHELP, &XmlFormatHandler::SystemMethodHelp, *this)
     .SetHelpText("Returns a text description of a particular method")
     .AddSignature(Value::Type::STRING, Value::Type::STRING);
+
+  AddCapability(CAPABILITY_INTROSPECT,
+                CAPABILITY_INTROSPECT_URL,
+                CAPABILITY_INTROSPECT_VERSION);
+}
+
+void XmlFormatHandler::AddCapability(
+  std::string name, std::string url, int32_t version)
+{
+  auto result = Capabilities.emplace(
+    std::move(name), Capability{std::move(url), version});
+  if (!result.second) {
+    throw std::invalid_argument("capability already added");
+  }
+}
+
+void XmlFormatHandler::RemoveCapability(const std::string& name)
+{
+  Capabilities.erase(name);
 }
 
 bool XmlFormatHandler::CanHandleRequest(
@@ -113,7 +166,9 @@ Value XmlFormatHandler::SystemMulticall(
         call[xml::METHOD_NAME_TAG].AsString(), callParams);
 
       retval.ThrowIfFault();
-      result.push_back(Value::Array{std::move(retval.GetResult())});
+      Value::Array a;
+      a.emplace_back(std::move(retval.GetResult()));
+      result.push_back(std::move(a));
     }
     catch (const Fault& ex) {
       Value::Struct fault;
@@ -122,7 +177,7 @@ Value XmlFormatHandler::SystemMulticall(
       result.push_back(std::move(fault));
     }
   }
-  return result;
+  return std::move(result);
 }
 
 Value XmlFormatHandler::SystemListMethods() const
@@ -141,7 +196,7 @@ Value XmlFormatHandler::SystemMethodSignature(
     if (!method.IsHidden()) {
       auto& signatures = method.GetSignatures();
       if (signatures.empty()) {
-        return "undef";
+        return SIGNATURE_UNDEFINED;
       }
 
       Value::Array result;
@@ -190,7 +245,7 @@ Value XmlFormatHandler::SystemMethodSignature(
         }
         result.emplace_back(std::move(types));
       }
-      return result;
+      return std::move(result);
     }
   }
   catch (...) {
@@ -216,6 +271,18 @@ std::string XmlFormatHandler::SystemMethodHelp(
   }
 
   throw Fault("No method " + methodName);
+}
+
+Value XmlFormatHandler::SystemGetCapabilities() const
+{
+  Value::Struct capabilities;
+  for (auto& capability : Capabilities) {
+    Value::Struct value;
+    value.emplace(SPEC_URL, capability.second.Url);
+    value.emplace(SPEC_VERSION, capability.second.Version);
+    capabilities.emplace(capability.first, std::move(value));
+  }
+  return std::move(capabilities);
 }
 
 } // namespace xsonrpc

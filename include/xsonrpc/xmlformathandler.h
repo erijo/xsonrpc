@@ -22,6 +22,8 @@
 #include "request.h"
 #include "value.h"
 
+#include <map>
+
 namespace xsonrpc {
 
 class Dispatcher;
@@ -34,6 +36,8 @@ public:
                             std::string requestPath = "/RPC2");
 
   void EnableIntrospection();
+  void AddCapability(std::string name, std::string url, int32_t version);
+  void RemoveCapability(const std::string& name);
 
   // FormatHandler
   bool CanHandleRequest(const std::string& path,
@@ -47,8 +51,17 @@ private:
   Value SystemListMethods() const;
   Value SystemMethodSignature(const std::string& methodName) const;
   std::string SystemMethodHelp(const std::string& methodName) const;
+  Value SystemGetCapabilities() const;
+
   Dispatcher* myDispather;
   std::string myRequestPath;
+
+  struct Capability
+  {
+    std::string Url;
+    int32_t Version;
+  };
+  std::map<std::string, Capability> Capabilities;
 };
 
 } // namespace xsonrpc

@@ -27,6 +27,26 @@ MethodWrapper& MethodWrapper::SetHelpText(std::string help)
   return *this;
 }
 
+std::vector<std::string> Dispatcher::GetMethodNames(
+  bool includeHidden) const
+{
+  std::vector<std::string> names;
+  names.reserve(myMethods.size());
+
+  for (auto& method : myMethods) {
+    if (includeHidden || !method.second.IsHidden()) {
+      names.emplace_back(method.first);
+    }
+  }
+
+  return names;
+}
+
+MethodWrapper& Dispatcher::GetMethod(const std::string& name)
+{
+  return myMethods.at(name);
+}
+
 MethodWrapper& Dispatcher::AddMethod(
   std::string name, MethodWrapper::Method method)
 {
@@ -51,7 +71,7 @@ Response Dispatcher::Invoke(const std::string& name,
   try {
     auto method = myMethods.find(name);
     if (method == myMethods.end()) {
-      throw MethodNotFoundFault(name);
+      throw MethodNotFoundFault("Method not found: " + name);
     }
     return method->second(parameters);
   }

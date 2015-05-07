@@ -28,6 +28,9 @@ namespace {
 
 const char TEXT_XML[] = "text/xml";
 const char SYSTEM_MULTICALL[] = "system.multicall";
+const char SYSTEM_LISTMETHODS[] = "system.listMethods";
+const char SYSTEM_METHODSIGNATURE[] = "system.methodSignature";
+const char SYSTEM_METHODHELP[] = "system.methodHelp";
 
 } // namespace
 
@@ -47,6 +50,27 @@ XmlFormatHandler::XmlFormatHandler(
     SYSTEM_MULTICALL, &XmlFormatHandler::SystemMulticall, *this)
     .SetHelpText("Call multiple methods at once")
     .AddSignature(Value::Type::ARRAY, Value::Type::ARRAY);
+}
+
+void XmlFormatHandler::EnableIntrospection()
+{
+  assert(myDispather);
+
+  myDispather->AddMethod(
+    SYSTEM_LISTMETHODS, &XmlFormatHandler::SystemListMethods, *this)
+    .SetHelpText("Returns a list of the methods the server has")
+    .AddSignature(Value::Type::ARRAY);
+
+  myDispather->AddMethod(
+    SYSTEM_METHODSIGNATURE, &XmlFormatHandler::SystemMethodSignature, *this)
+    .SetHelpText("Returns a description of the argument format a particular"
+                 " method expects")
+    .AddSignature(Value::Type::ARRAY, Value::Type::STRING);
+
+  myDispather->AddMethod(
+    SYSTEM_METHODHELP, &XmlFormatHandler::SystemMethodHelp, *this)
+    .SetHelpText("Returns a text description of a particular method")
+    .AddSignature(Value::Type::STRING, Value::Type::STRING);
 }
 
 bool XmlFormatHandler::CanHandleRequest(
@@ -99,6 +123,99 @@ Value XmlFormatHandler::SystemMulticall(
     }
   }
   return result;
+}
+
+Value XmlFormatHandler::SystemListMethods() const
+{
+  assert(myDispather);
+  return myDispather->GetMethodNames();
+}
+
+Value XmlFormatHandler::SystemMethodSignature(
+  const std::string& methodName) const
+{
+  assert(myDispather);
+
+  try {
+    auto& method = myDispather->GetMethod(methodName);
+    if (!method.IsHidden()) {
+      auto& signatures = method.GetSignatures();
+      if (signatures.empty()) {
+        return "undef";
+      }
+
+      Value::Array result;
+      result.reserve(signatures.size());
+
+      for (auto& signature : signatures) {
+        Value::Array types;
+        types.reserve(signature.size());
+
+        for (auto type : signature) {
+          switch (type) {
+            case Value::Type::ARRAY:
+              types.emplace_back(xml::ARRAY_TAG);
+              break;
+            case Value::Type::BINARY:
+              types.emplace_back(xml::BASE_64_TAG);
+              break;
+            case Value::Type::BOOLEAN:
+              types.emplace_back(xml::BOOLEAN_TAG);
+              break;
+            case Value::Type::DATE_TIME:
+              types.emplace_back(xml::DATE_TIME_TAG);
+              break;
+            case Value::Type::DOUBLE:
+              types.emplace_back(xml::DOUBLE_TAG);
+              break;
+            case Value::Type::INTEGER_32:
+              types.emplace_back(xml::INTEGER_32_TAG);
+              break;
+            case Value::Type::INTEGER_64:
+              types.emplace_back(xml::INTEGER_64_TAG);
+              break;
+            case Value::Type::NIL:
+              // Only useful for return value
+              if (types.empty()) {
+                types.emplace_back(xml::NIL_TAG);
+              }
+              break;
+            case Value::Type::STRING:
+              types.emplace_back(xml::STRING_TAG);
+              break;
+            case Value::Type::STRUCT:
+              types.emplace_back(xml::STRUCT_TAG);
+              break;
+          }
+        }
+        result.emplace_back(std::move(types));
+      }
+      return result;
+    }
+  }
+  catch (...) {
+    // Ignore
+  }
+
+  throw Fault("No method " + methodName);
+}
+
+std::string XmlFormatHandler::SystemMethodHelp(
+  const std::string& methodName) const
+{
+  assert(myDispather);
+
+  try {
+    auto& method = myDispather->GetMethod(methodName);
+    if (!method.IsHidden()) {
+      return method.GetHelpText();
+    }
+  }
+  catch (...) {
+    // Ignore
+  }
+
+  throw Fault("No method " + methodName);
 }
 
 } // namespace xsonrpc

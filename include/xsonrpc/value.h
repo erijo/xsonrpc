@@ -67,12 +67,12 @@ public:
   Value(Struct value);
 
   template<typename T>
-  Value(const std::vector<T>& value)
+  Value(std::vector<T> value)
     : Value(Array{})
   {
     as.myArray->reserve(value.size());
     for (auto& v : value) {
-      as.myArray->emplace_back(v);
+      as.myArray->emplace_back(std::move(v));
     }
   }
 

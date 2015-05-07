@@ -33,6 +33,8 @@ public:
   explicit XmlFormatHandler(Dispatcher& dispather,
                             std::string requestPath = "/RPC2");
 
+  void EnableIntrospection();
+
   // FormatHandler
   bool CanHandleRequest(const std::string& path,
                         const std::string& contentType) override;
@@ -42,6 +44,9 @@ public:
 
 private:
   Value SystemMulticall(const Request::Parameters& parameters) const;
+  Value SystemListMethods() const;
+  Value SystemMethodSignature(const std::string& methodName) const;
+  std::string SystemMethodHelp(const std::string& methodName) const;
   Dispatcher* myDispather;
   std::string myRequestPath;
 };

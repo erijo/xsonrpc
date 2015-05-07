@@ -68,6 +68,7 @@ int main()
   xsonrpc::Server server(8080);
 
   xsonrpc::XmlFormatHandler xmlFormatHandler(server.GetDispatcher());
+  xmlFormatHandler.EnableIntrospection();
   server.RegisterFormatHandler(xmlFormatHandler);
 
   auto& dispatcher = server.GetDispatcher();
@@ -78,8 +79,10 @@ int main()
   dispatcher.AddMethod("from_binary", &FromBinary);
   dispatcher.AddMethod("to_struct", &ToStruct);
 
+  dispatcher.GetMethod("add").SetHelpText("Add two integers");
+
   bool run = true;
-  dispatcher.AddMethod("exit", [&] () { run = false; });
+  dispatcher.AddMethod("exit", [&] () { run = false; }).SetHidden();
   server.Run();
 
   pollfd fd;

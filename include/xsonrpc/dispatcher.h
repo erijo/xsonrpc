@@ -47,9 +47,11 @@ public:
   MethodWrapper(const MethodWrapper&) = delete;
   MethodWrapper& operator=(const MethodWrapper&) = delete;
 
+  bool IsHidden() const { return myIsHidden; }
+  void SetHidden(bool hidden = true) { myIsHidden = hidden; }
+
   MethodWrapper& SetHelpText(std::string help);
   const std::string& GetHelpText() const { return myHelpText; }
-  bool HasHelpText() const { return !myHelpText.empty(); }
 
   template<typename... ParameterTypes>
   MethodWrapper& AddSignature(Value::Type returnType,
@@ -70,6 +72,7 @@ public:
 
 private:
   Method myMethod;
+  bool myIsHidden = false;
   std::string myHelpText;
   std::vector<std::vector<Value::Type>> mySignatures;
 };
@@ -113,6 +116,9 @@ struct StdFunction<MethodType, true>
 class Dispatcher
 {
 public:
+  std::vector<std::string> GetMethodNames(bool includeHidden = false) const;
+  MethodWrapper& GetMethod(const std::string& name);
+
   MethodWrapper& AddMethod(
     std::string name, MethodWrapper::Method method);
 

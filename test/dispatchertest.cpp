@@ -103,10 +103,15 @@ TEST_CASE("method wrapper")
 {
   MethodWrapper method(&TestMethod);
 
-  CHECK_FALSE(method.HasHelpText());
+  CHECK(method.GetHelpText() == "");
   method.SetHelpText("test help");
-  CHECK(method.HasHelpText());
   CHECK(method.GetHelpText() == "test help");
+
+  CHECK_FALSE(method.IsHidden());
+  method.SetHidden();
+  CHECK(method.IsHidden());
+  method.SetHidden(false);
+  CHECK_FALSE(method.IsHidden());
 
   method.AddSignature(Value::Type::BOOLEAN);
   method.AddSignature(Value::Type::STRING, Value::Type::STRING);

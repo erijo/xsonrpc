@@ -17,6 +17,7 @@
 
 #include "xsonrpc/server.h"
 #include "xsonrpc/xmlformathandler.h"
+#include "xsonrpc/xmlrpcsystemmethods.h"
 
 #include <numeric>
 #include <poll.h>
@@ -67,8 +68,9 @@ int main()
   Math math;
   xsonrpc::Server server(8080);
 
-  xsonrpc::XmlFormatHandler xmlFormatHandler(server.GetDispatcher());
-  xmlFormatHandler.EnableIntrospection();
+  xsonrpc::XmlRpcSystemMethods systemMethods(server.GetDispatcher(), true);
+
+  xsonrpc::XmlFormatHandler xmlFormatHandler;
   server.RegisterFormatHandler(xmlFormatHandler);
 
   auto& dispatcher = server.GetDispatcher();
@@ -79,7 +81,11 @@ int main()
   dispatcher.AddMethod("from_binary", &FromBinary);
   dispatcher.AddMethod("to_struct", &ToStruct);
 
-  dispatcher.GetMethod("add").SetHelpText("Add two integers");
+  using xsonrpc::Value;
+  dispatcher.GetMethod("add")
+    .SetHelpText("Add two integers")
+    .AddSignature(Value::Type::INTEGER_32,
+                  Value::Type::INTEGER_32, Value::Type::INTEGER_32);
 
   bool run = true;
   dispatcher.AddMethod("exit", [&] () { run = false; }).SetHidden();

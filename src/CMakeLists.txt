@@ -10,6 +10,7 @@ add_library(xsonrpc SHARED
   value.cpp
   xmlformathandler.cpp
   xmlreader.cpp
+  xmlrpcsystemmethods.cpp
   xmlwriter.cpp
 )
 

@@ -5,7 +5,7 @@ add_executable(unittest
   responsetest.cpp
   utiltest.cpp
   valuetest.cpp
-  xmlformathandlertest.cpp
+  xmlrpcsystemmethodstest.cpp
 )
 
 target_link_libraries(unittest xsonrpc)

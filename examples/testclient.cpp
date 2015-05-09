@@ -59,6 +59,46 @@ int main(int argc, char** argv)
   }
   std::cout << "to_struct: " << client.Call("to_struct", params) << "\n";
 
+  params.clear();
+  {
+    xsonrpc::Value::Array calls;
+    {
+      xsonrpc::Value::Struct call;
+      call["methodName"] = "add";
+      {
+        xsonrpc::Value::Array params;
+        params.emplace_back(23);
+        params.emplace_back(19);
+        call["params"] = std::move(params);
+      }
+      calls.emplace_back(std::move(call));
+    }
+    {
+      xsonrpc::Value::Struct call;
+      call["methodName"] = "does.NotExist";
+      calls.emplace_back(std::move(call));
+    }
+    {
+      xsonrpc::Value::Struct call;
+      call["methodName"] = "concat";
+      {
+        xsonrpc::Value::Array params;
+        params.emplace_back("Hello ");
+        params.emplace_back("multicall!");
+        call["params"] = std::move(params);
+      }
+      calls.emplace_back(std::move(call));
+    }
+    params.emplace_back(std::move(calls));
+  }
+  std::cout << "multicall: " << client.Call("system.multicall", params)
+            << "\n";
+  std::cout << "methods: " << client.Call("system.listMethods") << "\n";
+  std::cout << "help(add): " << client.Call("system.methodHelp", "add")
+            << "\n";
+  std::cout << "params(add): "
+            << client.Call("system.methodSignature", "add") << "\n";
+
   if (argc >= 2 && strcmp(argv[1], "-e") == 0) {
     std::cout << "exit: " << client.Call("exit") << "\n";
   }

@@ -15,10 +15,9 @@
 // along with this library; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#ifndef XSONRPC_XMLFORMATHANDLER_H
-#define XSONRPC_XMLFORMATHANDLER_H
+#ifndef XSONRPC_XMLRPCSYSTEMMETHODS_H
+#define XSONRPC_XMLRPCSYSTEMMETHODS_H
 
-#include "formathandler.h"
 #include "request.h"
 #include "value.h"
 
@@ -28,20 +27,30 @@ namespace xsonrpc {
 
 class Dispatcher;
 
-class XmlFormatHandler : public FormatHandler
+class XmlRpcSystemMethods
 {
 public:
-  explicit XmlFormatHandler(std::string requestPath = "/RPC2");
+  XmlRpcSystemMethods(Dispatcher& dispather, bool introspection);
+  ~XmlRpcSystemMethods();
 
-  // FormatHandler
-  bool CanHandleRequest(const std::string& path,
-                        const std::string& contentType) override;
-  std::string GetContentType() override;
-  std::unique_ptr<Reader> CreateReader(std::string data) override;
-  std::unique_ptr<Writer> CreateWriter() override;
+  void AddCapability(std::string name, std::string url, int32_t version);
+  void RemoveCapability(const std::string& name);
 
 private:
-  std::string myRequestPath;
+  Value SystemMulticall(const Request::Parameters& parameters) const;
+  Value SystemListMethods() const;
+  Value SystemMethodSignature(const std::string& methodName) const;
+  std::string SystemMethodHelp(const std::string& methodName) const;
+  Value SystemGetCapabilities() const;
+
+  Dispatcher& myDispather;
+
+  struct Capability
+  {
+    std::string Url;
+    int32_t Version;
+  };
+  std::map<std::string, Capability> myCapabilities;
 };
 
 } // namespace xsonrpc

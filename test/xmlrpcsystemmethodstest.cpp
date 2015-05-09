@@ -16,7 +16,7 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "dispatcher.h"
-#include "xmlformathandler.h"
+#include "xmlrpcsystemmethods.h"
 
 #include <catch.hpp>
 
@@ -45,7 +45,7 @@ TEST_CASE("multicall")
   dispatcher.AddMethod("test", &TestMethodBool);
   dispatcher.AddMethod("foobar", &TestMethod);
 
-  XmlFormatHandler xmlFormatHandler(dispatcher);
+  XmlRpcSystemMethods systemMethods(dispatcher, false);
 
   Value::Array args;
 
@@ -108,4 +108,109 @@ TEST_CASE("multicall")
   CHECK(value[2].IsArray());
   CHECK(value[2].AsArray().size() == 1);
   CHECK(value[2][0].AsBoolean());
+}
+
+TEST_CASE("multicall spec example")
+{
+  Dispatcher dispatcher;
+  dispatcher.AddMethod("system.add", [](int a, int b) { return a + b; });
+
+  XmlRpcSystemMethods systemMethods(dispatcher, false);
+
+  Value::Array args;
+  {
+    Value::Array params;
+    params.emplace_back(2);
+    params.emplace_back(2);
+
+    Value::Struct call;
+    call["methodName"] = "system.add";
+    call["params"] = std::move(params);
+
+    args.push_back(std::move(call));
+  }
+
+  {
+    Value::Array params;
+    params.emplace_back(1);
+
+    Value::Struct call;
+    call["methodName"] = "test.nonexistant";
+    call["params"] = std::move(params);
+
+    args.push_back(std::move(call));
+  }
+
+  {
+    Value::Array params;
+
+    Value::Struct call;
+    call["methodName"] = "system.multicall";
+    call["params"] = std::move(params);
+
+    args.push_back(std::move(call));
+  }
+
+  {
+    Value::Struct call;
+    call["methodName"] = "system.multicall";
+
+    args.push_back(std::move(call));
+  }
+
+  {
+    args.emplace_back("this is not a struct");
+  }
+
+  {
+    Value::Array params;
+    params.emplace_back(4);
+    params.emplace_back(4);
+
+    Value::Struct call;
+    call["methodName"] = "system.add";
+    call["params"] = std::move(params);
+
+    args.push_back(std::move(call));
+  }
+
+  Request::Parameters parameters;
+  parameters.push_back(std::move(args));
+
+  auto response = dispatcher.Invoke("system.multicall", parameters);
+  CAPTURE(response.GetResult());
+  REQUIRE_FALSE(response.IsFault());
+
+  auto& value = response.GetResult();
+  REQUIRE(value.IsArray());
+  REQUIRE(value.AsArray().size() == 6);
+
+  // Results
+  CHECK(value[0].IsArray());
+  CHECK(value[0].AsArray().size() == 1);
+  CHECK(value[0][0].AsInteger32() == 4);
+
+  CHECK(value[1].IsStruct());
+  CHECK(value[1].AsStruct().size() == 2);
+  CHECK_NOTHROW(value[1]["faultCode"]);
+  CHECK_NOTHROW(value[1]["faultString"]);
+
+  CHECK(value[2].IsStruct());
+  CHECK(value[2].AsStruct().size() == 2);
+  CHECK_NOTHROW(value[2]["faultCode"]);
+  CHECK_NOTHROW(value[2]["faultString"]);
+
+  CHECK(value[3].IsStruct());
+  CHECK(value[3].AsStruct().size() == 2);
+  CHECK_NOTHROW(value[3]["faultCode"]);
+  CHECK_NOTHROW(value[3]["faultString"]);
+
+  CHECK(value[4].IsStruct());
+  CHECK(value[4].AsStruct().size() == 2);
+  CHECK_NOTHROW(value[4]["faultCode"]);
+  CHECK_NOTHROW(value[4]["faultString"]);
+
+  CHECK(value[5].IsArray());
+  CHECK(value[5].AsArray().size() == 1);
+  CHECK(value[5][0].AsInteger32() == 8);
 }

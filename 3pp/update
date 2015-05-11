@@ -15,3 +15,4 @@ pull()
 pull 3pp/catch https://github.com/philsquared/Catch.git
 pull 3pp/integer_seq https://github.com/erijo/integer_seq.git
 pull 3pp/tinyxml2 https://github.com/leethomason/tinyxml2.git
+pull 3pp/rapidjson https://github.com/miloyip/rapidjson.git

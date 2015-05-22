@@ -21,7 +21,7 @@ unsigned int Factorial( unsigned int number ) {
 }
 ```
 
-To keep things simple we'll put everything in a single file.
+To keep things simple we'll put everything in a single file (<a href="#scaling-up">see later for more on how to structure your test files</a>)
 
 ```c++
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
@@ -210,7 +210,7 @@ SCENARIO( "vectors can be sized and resized", "[vector]" ) {
 }
 ```
 
-Conveniently, these tests will be reported as follows when ran:
+Conveniently, these tests will be reported as follows when run:
 
 ```
 Scenario: vectors can be sized and resized
@@ -219,11 +219,30 @@ Scenario: vectors can be sized and resized
       Then: the capacity changes but not the size
 ```
 
+<a id="scaling-up"></a>
+## Scaling up
+
+To keep the tutorial simple we put all our code in a single file. This is fine to get started - and makes jumping into Catch even quicker and easier. As you write more real-world tests, though, this is not really the best approach.
+
+The requirement is that the following block of code ([or equivalent](own-main.md)):
+
+```c++
+#define CATCH_CONFIG_MAIN
+#include "catch.hpp"
+```
+
+appears in _exactly one_ source file. Use as many additional cpp files (or whatever you call your implementation files) as you need for your tests, partitioned however makes most sense for your way of working. Each additional file need only ```#include "catch.hpp"``` - do not repeat the ```#define```!
+
+In fact it is usually a good idea to put the block with the ```#define``` [in it's own source file](slow-compiles.md).
+
+Do not write your tests in header files!
+
+
 ## Next steps
 
 This has been a brief introduction to get you up and running with Catch, and to point out some of the key differences between Catch and other frameworks you may already be familiar with. This will get you going quite far already and you are now in a position to dive in and write some tests.
 
-Of course there is more to learn - most of which you should be able to page-fault in as you go. Please see the every-growing [Reference section](Readme.md) for what's available.
+Of course there is more to learn - most of which you should be able to page-fault in as you go. Please see the ever-growing [Reference section](Readme.md) for what's available.
 
 ---
 

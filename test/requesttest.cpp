@@ -16,8 +16,11 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "request.h"
-#include "../src/xmlreader.h"
-#include "../src/xmlwriter.h"
+
+#include "jsonformathandler.h"
+#include "xmlformathandler.h"
+#include "../src/reader.h"
+#include "../src/writer.h"
 
 #include <catch.hpp>
 #include <memory>
@@ -26,55 +29,83 @@ using namespace xsonrpc;
 
 namespace {
 
+std::string ToJson(const Request& request)
+{
+  auto writer = JsonFormatHandler().CreateWriter();
+  request.Write(*writer);
+  return std::string(writer->GetData(), writer->GetSize());
+}
+
+std::unique_ptr<Request> FromJson(const char* json)
+{
+  auto reader = JsonFormatHandler().CreateReader(json);
+  return std::unique_ptr<Request>{new Request(reader->GetRequest())};
+}
+
 std::string ToXml(const Request& request)
 {
-  XmlWriter writer;
-  request.Write(writer);
-  return std::string(writer.GetData(), writer.GetSize());
+  auto writer = XmlFormatHandler().CreateWriter();
+  request.Write(*writer);
+  return std::string(writer->GetData(), writer->GetSize());
+}
+
+std::unique_ptr<Request> FromXml(std::string xml)
+{
+  auto reader = XmlFormatHandler().CreateReader(std::move(xml));
+  return std::unique_ptr<Request>(new Request(reader->GetRequest()));
 }
 
 } // namespace
 
 TEST_CASE("invalid request")
 {
-  std::unique_ptr<XmlReader> reader;
+  CHECK_THROWS_AS(
+    FromJson(
+      R"({"jsonrpc": "2.0", "method": "foobar, "params": "bar", "baz])"),
+    std::exception);
+  CHECK_THROWS_AS(
+    FromJson(
+      R"({"jsonrpc": "2.0", "method": 1, "params": "bar"})"),
+    std::exception);
 
-  CHECK_THROWS_AS(reader.reset(new XmlReader(NULL, 0)), std::exception);
-
-  GIVEN("no method name")
-  {
-    std::string doc = "<methodCall/>";
-    reader.reset(new XmlReader(doc.data(), doc.size()));
-  }
-
-  GIVEN("empty method name")
-  {
-    std::string doc = "<methodCall><methodName/></methodCall>";
-    reader.reset(new XmlReader(doc.data(), doc.size()));
-  }
-
-  CHECK_THROWS_AS(reader->GetRequest(), std::exception);
+  CHECK_THROWS_AS(FromXml(""), std::exception);
+  CHECK_THROWS_AS(FromXml("<methodCall/>"), std::exception);
+  CHECK_THROWS_AS(FromXml("<methodCall><methodName/></methodCall>"),
+                  std::exception);
 }
 
 TEST_CASE("only method name")
 {
-  std::string document;
+  std::unique_ptr<Request> request;
 
-  GIVEN("no params tag")
+  GIVEN("json: no params")
   {
-    document = "<methodCall><methodName>test</methodName></methodCall>";
+    request = FromJson(R"({"jsonrpc": "2.0", "method": "test"})");
   }
 
-  GIVEN("empty params tag")
+  GIVEN("xml: no params")
   {
-    document =
-      "<methodCall><methodName>test</methodName><params/></methodCall>";
+    request = FromXml(
+      "<methodCall><methodName>test</methodName></methodCall>");
   }
 
-  Request request = XmlReader(document.data(), document.size()).GetRequest();
-  CHECK(request.GetMethodName() == "test");
-  CHECK(request.GetParameters().empty());
-  CHECK(ToXml(request) ==
+  GIVEN("json: empty params")
+  {
+    request = FromJson(
+      R"({"jsonrpc": "2.0", "method": "test", "params": []})");
+  }
+
+  GIVEN("xml: empty params")
+  {
+    request = FromXml(
+      "<methodCall><methodName>test</methodName><params/></methodCall>");
+  }
+
+  CHECK(request->GetMethodName() == "test");
+  CHECK(request->GetParameters().empty());
+  CHECK(ToJson(*request) ==
+        R"({"jsonrpc":"2.0","method":"test","id":0,"params":[]})");
+  CHECK(ToXml(*request) ==
         "<?xml version=\"1.0\"?>"
         "<methodCall>"
         "<methodName>test</methodName>"
@@ -84,16 +115,28 @@ TEST_CASE("only method name")
 
 TEST_CASE("one parameter")
 {
-  std::string document =
-    "<methodCall><methodName>test</methodName>"
-    "<params><param><value><int>47</int></value></param></params>"
-    "</methodCall>";
+  std::unique_ptr<Request> request;
 
-  Request request = XmlReader(document.data(), document.size()).GetRequest();
-  CHECK(request.GetMethodName() == "test");
-  REQUIRE_FALSE(request.GetParameters().empty());
-  CHECK(request.GetParameters()[0].IsInteger32());
-  CHECK(ToXml(request) ==
+  GIVEN("from json")
+  {
+    request = FromJson(
+      R"({"jsonrpc": "2.0", "method": "test", "params": [47]})");
+  }
+
+  GIVEN("from xml")
+  {
+    request = FromXml(
+      "<methodCall><methodName>test</methodName>"
+      "<params><param><value><int>47</int></value></param></params>"
+      "</methodCall>");
+  }
+
+  CHECK(request->GetMethodName() == "test");
+  REQUIRE_FALSE(request->GetParameters().empty());
+  CHECK(request->GetParameters()[0].IsInteger32());
+  CHECK(ToJson(*request) ==
+        R"({"jsonrpc":"2.0","method":"test","id":0,"params":[47]})");
+  CHECK(ToXml(*request) ==
         "<?xml version=\"1.0\"?>"
         "<methodCall>"
         "<methodName>test</methodName>"
@@ -103,23 +146,34 @@ TEST_CASE("one parameter")
         "</methodCall>");
 }
 
-
 TEST_CASE("three parameters")
 {
-  std::string document =
-    "<methodCall><methodName>test</methodName><params>"
-    "<param><value><int>47</int></value></param>"
-    "<param><value><int>46</int></value></param>"
-    "<param><value><int>45</int></value></param>"
-    "</params></methodCall>";
+  std::unique_ptr<Request> request;
 
-  Request request = XmlReader(document.data(), document.size()).GetRequest();
-  CHECK(request.GetMethodName() == "test");
-  REQUIRE(request.GetParameters().size() == 3);
-  CHECK(request.GetParameters()[0].AsInteger32() == 47);
-  CHECK(request.GetParameters()[1].AsInteger32() == 46);
-  CHECK(request.GetParameters()[2].AsInteger32() == 45);
-  CHECK(ToXml(request) ==
+  GIVEN("from json")
+  {
+    request = FromJson(
+      R"({"jsonrpc": "2.0", "method": "test", "params": [47,46,45]})");
+  }
+
+  GIVEN("from xml")
+  {
+    request = FromXml(
+      "<methodCall><methodName>test</methodName><params>"
+      "<param><value><int>47</int></value></param>"
+      "<param><value><int>46</int></value></param>"
+      "<param><value><int>45</int></value></param>"
+      "</params></methodCall>");
+  }
+
+  CHECK(request->GetMethodName() == "test");
+  REQUIRE(request->GetParameters().size() == 3);
+  CHECK(request->GetParameters()[0].AsInteger32() == 47);
+  CHECK(request->GetParameters()[1].AsInteger32() == 46);
+  CHECK(request->GetParameters()[2].AsInteger32() == 45);
+  CHECK(ToJson(*request) ==
+        R"({"jsonrpc":"2.0","method":"test","id":0,"params":[47,46,45]})");
+  CHECK(ToXml(*request) ==
         "<?xml version=\"1.0\"?>"
         "<methodCall>"
         "<methodName>test</methodName>"

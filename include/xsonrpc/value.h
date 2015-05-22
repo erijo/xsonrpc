@@ -35,7 +35,6 @@ class Value
 {
 public:
   typedef std::vector<Value> Array;
-  typedef std::vector<uint8_t> Binary;
   typedef tm DateTime;
   typedef std::string String;
   typedef std::map<std::string, Value> Struct;
@@ -56,14 +55,13 @@ public:
 
   Value() : myType(Type::NIL) {}
   Value(Array value);
-  Value(Binary value);
   Value(bool value) : myType(Type::BOOLEAN) { as.myBoolean = value; }
   Value(const DateTime& value);
   Value(double value) : myType(Type::DOUBLE) { as.myDouble = value; }
-  Value(int32_t value) : myType(Type::INTEGER_32) { as.myInteger32 = value; }
-  Value(int64_t value) : myType(Type::INTEGER_64) { as.myInteger64 = value; }
+  Value(int32_t value);
+  Value(int64_t value);
   Value(const char* value) : Value(String(value)) {}
-  Value(String value);
+  Value(String value, bool binary = false);
   Value(Struct value);
 
   template<typename T>
@@ -113,7 +111,7 @@ public:
   bool IsStruct() const { return myType == Type::STRUCT; }
 
   const Array& AsArray() const;
-  const Binary& AsBinary() const;
+  const String& AsBinary() const { return AsString(); }
   const bool& AsBoolean() const;
   const DateTime& AsDateTime() const;
   const double& AsDouble() const;
@@ -139,14 +137,16 @@ private:
   union
   {
     Array* myArray;
-    Binary* myBinary;
     bool myBoolean;
     DateTime* myDateTime;
-    double myDouble;
-    int32_t myInteger32;
-    int64_t myInteger64;
     String* myString;
     Struct* myStruct;
+    struct
+    {
+      double myDouble;
+      int32_t myInteger32;
+      int64_t myInteger64;
+    };
   } as;
 };
 
@@ -154,12 +154,6 @@ template<> inline
 const Value::Array& Value::AsType<typename Value::Array>() const
 {
   return AsArray();
-}
-
-template<> inline
-const Value::Binary& Value::AsType<typename Value::Binary>() const
-{
-  return AsBinary();
 }
 
 template<> inline

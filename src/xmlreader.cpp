@@ -138,7 +138,7 @@ Value XmlReader::GetValue(tinyxml2::XMLElement* element)
     if (!text) {
       throw InvalidRequestFault("Value is not base64");
     }
-    return Value(util::Base64Decode(text, strlen(text)));
+    return Value(util::Base64Decode(text, strlen(text)), true);
   }
   else if (util::IsTag(*value, BOOLEAN_TAG)) {
     bool data;

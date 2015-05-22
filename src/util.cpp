@@ -101,7 +101,7 @@ bool ParseIso8601DateTime(const char* text, tm& dt)
   return true;
 }
 
-std::string Base64Encode(const uint8_t* data, size_t size)
+std::string Base64Encode(const char* data, size_t size)
 {
   const size_t lineLength = 76;
   static_assert(lineLength % 4 == 0, "invalid line length");
@@ -144,11 +144,11 @@ std::string Base64Encode(const uint8_t* data, size_t size)
   return str;
 }
 
-std::vector<uint8_t> Base64Decode(const char* str, size_t size)
+std::string Base64Decode(const char* str, size_t size)
 {
   const size_t maxDecodedSize = 3 * ((size + 3) / 4);
 
-  std::vector<uint8_t> data(maxDecodedSize);
+  std::string data(maxDecodedSize, '\0');
 
   size_t out = 0;
   uint32_t bits = 0;

@@ -146,7 +146,7 @@ void XmlWriter::EndStructElement()
   myPrinter.CloseElement(true);
 }
 
-void XmlWriter::WriteBinary(const uint8_t* data, size_t size)
+void XmlWriter::WriteBinary(const char* data, size_t size)
 {
   StartValue();
   myPrinter.OpenElement(BASE_64_TAG, true);

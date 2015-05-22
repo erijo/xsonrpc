@@ -16,18 +16,31 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "xsonrpc/client.h"
+#include "xsonrpc/jsonformathandler.h"
 #include "xsonrpc/xmlformathandler.h"
 
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <memory>
 
 int main(int argc, char** argv)
 {
   xsonrpc::Client::GlobalInit();
 
-  xsonrpc::XmlFormatHandler xmlFormatHandler;
-  xsonrpc::Client client("localhost", 8080, xmlFormatHandler);
+  std::unique_ptr<xsonrpc::FormatHandler> formatHandler;
+  for (int i = 1; i < argc; ++i) {
+    if (strcmp(argv[i], "json") == 0) {
+      std::cout << "Using JSON format\n";
+      formatHandler.reset(new xsonrpc::JsonFormatHandler());
+      break;
+    }
+  }
+  if (!formatHandler) {
+    std::cout << "Using XML format\n";
+    formatHandler.reset(new xsonrpc::XmlFormatHandler());
+  }
+  xsonrpc::Client client("localhost", 8080, *formatHandler);
 
   std::cout << "add: 3+2=" << client.Call("add", 3, 2) << "\n";
   std::cout << "concat: " << client.Call("concat", "Hello, ", "World!")
@@ -46,7 +59,7 @@ int main(int argc, char** argv)
             << "\n";
   std::cout << "from_binary: "
             << client.Call("from_binary",
-                           xsonrpc::Value::Binary{'H', 'i', '!'})
+                           xsonrpc::Value("Hi!", true))
             << "\n";
 
   params.clear();
@@ -99,8 +112,11 @@ int main(int argc, char** argv)
   std::cout << "params(add): "
             << client.Call("system.methodSignature", "add") << "\n";
 
-  if (argc >= 2 && strcmp(argv[1], "-e") == 0) {
-    std::cout << "exit: " << client.Call("exit") << "\n";
+  for (int i = 1; i < argc; ++i) {
+    if (strcmp(argv[i], "-e") == 0) {
+      std::cout << "exit: " << client.Call("exit") << "\n";
+      break;
+    }
   }
 
   return 0;

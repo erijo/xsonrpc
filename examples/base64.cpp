@@ -51,7 +51,7 @@ int main(int argc, char** argv)
   }
 
   const size_t size = encode ? 28671 : 30030;
-  std::unique_ptr<uint8_t[]> buffer(new uint8_t[size]);
+  std::unique_ptr<char[]> buffer(new char[size]);
 
   ssize_t res;
   while ((res = read(fd, buffer.get(), size)) > 0) {

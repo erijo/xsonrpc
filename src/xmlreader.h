@@ -28,7 +28,6 @@ class XmlReader final : public Reader
 {
 public:
   XmlReader(const char* data, size_t size);
-  ~XmlReader() = default;
 
   // Reader
   Request GetRequest() override;

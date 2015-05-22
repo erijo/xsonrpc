@@ -1,5 +1,5 @@
 // This file is part of xsonrpc, an XML/JSON RPC library.
-// Copyright (C) 2015 Erik Johansson <erik@ejohansson.se
+// Copyright (C) 2015 Erik Johansson <erik@ejohansson.se>
 //
 // This library is free software; you can redistribute it and/or modify it
 // under the terms of the GNU Lesser General Public License as published by the
@@ -15,18 +15,21 @@
 // along with this library; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#ifndef XSONRPC_XMLWRITER_H
-#define XSONRPC_XMLWRITER_H
+#ifndef XSONRPC_JSONWRITER_H
+#define XSONRPC_JSONWRITER_H
 
 #include "writer.h"
 
-#include <tinyxml2.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
 
 namespace xsonrpc {
 
-class XmlWriter final : public Writer
+class JsonWriter final : public Writer
 {
 public:
+  JsonWriter();
+
   // Writer
   const char* GetData() override;
   size_t GetSize() override;
@@ -57,10 +60,8 @@ public:
   void Write(const tm& value) override;
 
 private:
-  void StartValue();
-  void EndValue();
-
-  tinyxml2::XMLPrinter myPrinter;
+  rapidjson::StringBuffer myStringBuffer;
+  rapidjson::Writer<rapidjson::StringBuffer> myWriter;
 };
 
 } // namespace xsonrpc

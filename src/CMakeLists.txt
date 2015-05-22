@@ -3,6 +3,9 @@ add_library(xsonrpc SHARED
 
   client.cpp
   dispatcher.cpp
+  jsonformathandler.cpp
+  jsonreader.cpp
+  jsonwriter.cpp
   request.cpp
   response.cpp
   server.cpp
@@ -24,6 +27,10 @@ target_include_directories(xsonrpc PRIVATE ${TINYXML2_INCLUDE_DIR})
 if (TINYXML2_FOUND)
   target_link_libraries(xsonrpc ${TINYXML2_LIBRARY})
 endif()
+
+# RapidJSON
+target_include_directories(xsonrpc PRIVATE
+  "${PROJECT_SOURCE_DIR}/3pp/rapidjson/include")
 
 # libmicrohttpd
 target_include_directories(xsonrpc PRIVATE ${MICROHTTPD_INCLUDE_DIR})

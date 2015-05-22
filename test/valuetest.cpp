@@ -15,10 +15,13 @@
 // along with this library; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#include "fault.h"
 #include "value.h"
-#include "../src/xmlreader.h"
-#include "../src/xmlwriter.h"
+
+#include "fault.h"
+#include "jsonformathandler.h"
+#include "xmlformathandler.h"
+#include "../src/reader.h"
+#include "../src/writer.h"
 
 #include <catch.hpp>
 #include <memory>
@@ -27,11 +30,24 @@ using namespace xsonrpc;
 
 namespace {
 
+std::string ToJson(const Value& value)
+{
+  auto writer = JsonFormatHandler().CreateWriter();
+  value.Write(*writer);
+  return std::string(writer->GetData(), writer->GetSize());
+}
+
+std::unique_ptr<Value> FromJson(const char* json)
+{
+  auto reader = JsonFormatHandler().CreateReader(json);
+  return std::unique_ptr<Value>{new Value(reader->GetValue())};
+}
+
 std::string ToXml(const Value& value)
 {
-  XmlWriter writer;
-  value.Write(writer);
-  return std::string(writer.GetData(), writer.GetSize());
+  auto writer = XmlFormatHandler().CreateWriter();
+  value.Write(*writer);
+  return std::string(writer->GetData(), writer->GetSize());
 }
 
 std::unique_ptr<Value> FromXml(const char* xml)
@@ -39,8 +55,8 @@ std::unique_ptr<Value> FromXml(const char* xml)
   std::string document("<value>");
   document += xml;
   document += "</value>";
-  XmlReader reader(document.data(), document.size());
-  return std::unique_ptr<Value>{new Value(reader.GetValue())};
+  auto reader = XmlFormatHandler().CreateReader(std::move(document));
+  return std::unique_ptr<Value>{new Value(reader->GetValue())};
 }
 
 } // namespace
@@ -52,6 +68,11 @@ TEST_CASE("nil")
   GIVEN("from constructor")
   {
     value = std::unique_ptr<Value>{new Value};
+  }
+
+  GIVEN("from json")
+  {
+    value = FromJson("null");
   }
 
   GIVEN("from xml")
@@ -83,6 +104,7 @@ TEST_CASE("nil")
   CHECK_THROWS_AS((*value)[0], InvalidParametersFault);
   CHECK_THROWS_AS((*value)["notthere"], InvalidParametersFault);
 
+  CHECK(ToJson(*value) == "null");
   CHECK(ToXml(*value) == "<value><nil/></value>");
 }
 
@@ -97,6 +119,11 @@ TEST_CASE("array")
     array.emplace_back(false);
 
     value = std::unique_ptr<Value>{new Value(std::move(array))};
+  }
+
+  GIVEN("from json")
+  {
+    value = FromJson("[1, false]");
   }
 
   GIVEN("from xml")
@@ -139,6 +166,7 @@ TEST_CASE("array")
   CHECK_FALSE((*value)[1].AsBoolean());
   CHECK_THROWS_AS((*value)[2], std::out_of_range);
 
+  CHECK(ToJson(*value) == "[1,false]");
   CHECK(ToXml(*value) ==
         "<value><array><data>"
         "<value><i4>1</i4></value>"
@@ -152,18 +180,22 @@ TEST_CASE("binary")
 
   GIVEN("from constructor")
   {
-    Value::Binary binary{'h', 'e', 'l', 'l', 'o', '!'};
-    value = std::unique_ptr<Value>{new Value(std::move(binary))};
+    Value::String binary{'"', 'h', 'e', 'l', 'l', '\0', '!', '"'};
+    value = std::unique_ptr<Value>{new Value(std::move(binary), true)};
+  }
+
+  GIVEN("from json")
+  {
+    value = FromJson(R"("\"hell\u0000!\"")");
   }
 
   GIVEN("from xml")
   {
-    value = FromXml("<base64>aGVsbG8h</base64>");
+    value = FromXml("<base64>ImhlbGwAISI=</base64>");
   }
 
   // Type check
   CHECK_FALSE(value->IsArray());
-  CHECK(value->IsBinary());
   CHECK(value->IsBinary());
   CHECK_FALSE(value->IsBoolean());
   CHECK_FALSE(value->IsDateTime());
@@ -181,16 +213,19 @@ TEST_CASE("binary")
   CHECK_THROWS_AS(value->AsDouble(), InvalidParametersFault);
   CHECK_THROWS_AS(value->AsInteger32(), InvalidParametersFault);
   CHECK_THROWS_AS(value->AsInteger64(), InvalidParametersFault);
-  CHECK_THROWS_AS(value->AsString(), InvalidParametersFault);
+  CHECK_NOTHROW(value->AsString());
   CHECK_THROWS_AS(value->AsStruct(), InvalidParametersFault);
 
   CHECK_THROWS_AS((*value)[0], InvalidParametersFault);
   CHECK_THROWS_AS((*value)["notthere"], InvalidParametersFault);
 
-  REQUIRE(value->AsBinary().size() == 6);
-  CHECK(value->AsBinary() == (Value::Binary{'h', 'e', 'l', 'l', 'o', '!'}));
+  REQUIRE(value->AsBinary().size() == 8);
+  CHECK(value->AsBinary() ==
+        (Value::String{'"', 'h', 'e', 'l', 'l', '\0', '!', '"'}));
+  CHECK(value->AsBinary() == value->AsString());
 
-  CHECK(ToXml(*value) == "<value><base64>aGVsbG8h</base64></value>");
+  CHECK(ToJson(*value) == R"("\"hell\u0000!\"")");
+  CHECK(ToXml(*value) == "<value><base64>ImhlbGwAISI=</base64></value>");
 }
 
 TEST_CASE("boolean")
@@ -200,6 +235,11 @@ TEST_CASE("boolean")
   GIVEN("from constructor")
   {
     value = std::unique_ptr<Value>{new Value(true)};
+  }
+
+  GIVEN("from json")
+  {
+    value = FromJson("true");
   }
 
   GIVEN("from xml")
@@ -233,6 +273,7 @@ TEST_CASE("boolean")
 
   CHECK(value->AsBoolean());
 
+  CHECK(ToJson(*value) == "true");
   CHECK(ToXml(*value) == "<value><boolean>1</boolean></value>");
 }
 
@@ -244,6 +285,11 @@ TEST_CASE("date time")
   {
     const time_t local = 1427890394;
     value = std::unique_ptr<Value>{new Value(*gmtime(&local))};
+  }
+
+  GIVEN("from json")
+  {
+    value = FromJson("\"20150401T12:13:14\"");
   }
 
   GIVEN("from xml")
@@ -287,6 +333,7 @@ TEST_CASE("date time")
   CHECK(dt.tm_yday == 90);
   CHECK(dt.tm_isdst == -1);
 
+  CHECK(ToJson(*value) == "\"20150401T12:13:14\"");
   CHECK(ToXml(*value) ==
         "<value><dateTime.iso8601>"
         "20150401T12:13:14</dateTime.iso8601></value>");
@@ -299,6 +346,11 @@ TEST_CASE("double")
   GIVEN("from constructor")
   {
     value = std::unique_ptr<Value>{new Value(1.5)};
+  }
+
+  GIVEN("from json")
+  {
+    value = FromJson("1.50");
   }
 
   GIVEN("from xml")
@@ -332,6 +384,7 @@ TEST_CASE("double")
 
   CHECK(value->AsDouble() == 1.5);
 
+  CHECK(ToJson(*value) == "1.5");
   CHECK(ToXml(*value) == "<value><double>1.5</double></value>");
 }
 
@@ -342,6 +395,11 @@ TEST_CASE("integer 32")
   GIVEN("from constructor")
   {
     value = std::unique_ptr<Value>{new Value(42)};
+  }
+
+  GIVEN("from json")
+  {
+    value = FromJson("42");
   }
 
   GIVEN("from xml")
@@ -364,17 +422,20 @@ TEST_CASE("integer 32")
   // Getter
   CHECK_THROWS_AS(value->AsArray(), InvalidParametersFault);
   CHECK_THROWS_AS(value->AsBoolean(), InvalidParametersFault);
-  CHECK_THROWS_AS(value->AsDouble(), InvalidParametersFault);
+  CHECK_NOTHROW(value->AsDouble());
   CHECK_NOTHROW(value->AsInteger32());
-  CHECK_THROWS_AS(value->AsInteger64(), InvalidParametersFault);
+  CHECK_NOTHROW(value->AsInteger64());
   CHECK_THROWS_AS(value->AsString(), InvalidParametersFault);
   CHECK_THROWS_AS(value->AsStruct(), InvalidParametersFault);
 
   CHECK_THROWS_AS((*value)[0], InvalidParametersFault);
   CHECK_THROWS_AS((*value)["notthere"], InvalidParametersFault);
 
+  CHECK(value->AsDouble() == 42.0);
   CHECK(value->AsInteger32() == 42);
+  CHECK(value->AsInteger64() == 42ll);
 
+  CHECK(ToJson(*value) == "42");
   CHECK(ToXml(*value) == "<value><i4>42</i4></value>");
 }
 
@@ -384,7 +445,12 @@ TEST_CASE("integer 64")
 
   GIVEN("from constructor")
   {
-    value = std::unique_ptr<Value>{new Value(int64_t(-5000000000))};
+    value = std::unique_ptr<Value>{new Value(int64_t(-5000000000ll))};
+  }
+
+  GIVEN("from json")
+  {
+    value = FromJson("-5000000000");
   }
 
   GIVEN("from xml")
@@ -407,7 +473,7 @@ TEST_CASE("integer 64")
   // Getter
   CHECK_THROWS_AS(value->AsArray(), InvalidParametersFault);
   CHECK_THROWS_AS(value->AsBoolean(), InvalidParametersFault);
-  CHECK_THROWS_AS(value->AsDouble(), InvalidParametersFault);
+  CHECK_NOTHROW(value->AsDouble());
   CHECK_THROWS_AS(value->AsInteger32(), InvalidParametersFault);
   CHECK_NOTHROW(value->AsInteger64());
   CHECK_THROWS_AS(value->AsString(), InvalidParametersFault);
@@ -416,8 +482,10 @@ TEST_CASE("integer 64")
   CHECK_THROWS_AS((*value)[0], InvalidParametersFault);
   CHECK_THROWS_AS((*value)["notthere"], InvalidParametersFault);
 
-  CHECK(value->AsInteger64() == -5000000000);
+  CHECK(value->AsDouble() == -5000000000.0);
+  CHECK(value->AsInteger64() == -5000000000ll);
 
+  CHECK(ToJson(*value) == "-5000000000");
   CHECK(ToXml(*value) == "<value><i8>-5000000000</i8></value>");
 }
 
@@ -434,6 +502,11 @@ TEST_CASE("string")
   GIVEN("from const char constructor")
   {
     value = std::unique_ptr<Value>{new Value("1 2 3 &amp;")};
+  }
+
+  GIVEN("from json")
+  {
+    value = FromJson("\"1 2 3 &amp;\"");
   }
 
   GIVEN("from xml")
@@ -467,6 +540,7 @@ TEST_CASE("string")
 
   CHECK(value->AsString() == "1 2 3 &amp;");
 
+  CHECK(ToJson(*value) == "\"1 2 3 &amp;\"");
   CHECK(ToXml(*value) == "<value><string>1 2 3 &amp;amp;</string></value>");
 }
 
@@ -485,6 +559,11 @@ TEST_CASE("struct")
     data["bar"] = Value(std::move(array));
 
     value = std::unique_ptr<Value>{new Value(std::move(data))};
+  }
+
+  GIVEN("from json")
+  {
+    value = FromJson(R"({"bar": ["a string"], "foo": true, "test":-34})");
   }
 
   GIVEN("from xml")
@@ -537,6 +616,8 @@ TEST_CASE("struct")
   CHECK((*value)["test"].AsInteger32() == -34);
   CHECK_THROWS_AS((*value)["notthere"], std::out_of_range);
 
+  CHECK(ToJson(*value) ==
+        "{\"bar\":[\"a string\"],\"foo\":true,\"test\":-34}");
   CHECK(ToXml(*value) ==
         "<value><struct>"
         "<member><name>bar</name>"

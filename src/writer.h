@@ -57,7 +57,7 @@ public:
   virtual void EndStruct() = 0;
   virtual void StartStructElement(const std::string& name) = 0;
   virtual void EndStructElement() = 0;
-  virtual void WriteBinary(const uint8_t* data, size_t size) = 0;
+  virtual void WriteBinary(const char* data, size_t size) = 0;
   virtual void WriteNull() = 0;
   virtual void Write(bool value) = 0;
   virtual void Write(double value) = 0;

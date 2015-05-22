@@ -15,31 +15,43 @@
 // along with this library; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#ifndef XSONRPC_XMLFORMATHANDLER_H
-#define XSONRPC_XMLFORMATHANDLER_H
+#include "jsonformathandler.h"
 
-#include "formathandler.h"
+#include "jsonreader.h"
+#include "jsonwriter.h"
 
-#include <map>
+namespace {
+
+const char APPLICATION_JSON[] = "application/json";
+
+} // namespace
 
 namespace xsonrpc {
 
-class XmlFormatHandler : public FormatHandler
+JsonFormatHandler::JsonFormatHandler(std::string requestPath)
+  : myRequestPath(std::move(requestPath))
 {
-public:
-  explicit XmlFormatHandler(std::string requestPath = "/RPC2");
+}
 
-  // FormatHandler
-  bool CanHandleRequest(const std::string& path,
-                        const std::string& contentType) override;
-  std::string GetContentType() override;
-  std::unique_ptr<Reader> CreateReader(std::string data) override;
-  std::unique_ptr<Writer> CreateWriter() override;
+bool JsonFormatHandler::CanHandleRequest(
+  const std::string& path, const std::string& contentType)
+{
+  return path == myRequestPath && contentType == APPLICATION_JSON;
+}
 
-private:
-  std::string myRequestPath;
-};
+std::string JsonFormatHandler::GetContentType()
+{
+  return APPLICATION_JSON;
+}
+
+std::unique_ptr<Reader> JsonFormatHandler::CreateReader(std::string data)
+{
+  return std::unique_ptr<Reader>(new JsonReader(std::move(data)));
+}
+
+std::unique_ptr<Writer> JsonFormatHandler::CreateWriter()
+{
+  return std::unique_ptr<Writer>(new JsonWriter());
+}
 
 } // namespace xsonrpc
-
-#endif

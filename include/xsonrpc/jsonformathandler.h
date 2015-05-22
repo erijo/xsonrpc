@@ -15,19 +15,17 @@
 // along with this library; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#ifndef XSONRPC_XMLFORMATHANDLER_H
-#define XSONRPC_XMLFORMATHANDLER_H
+#ifndef XSONRPC_JSONFORMATHANDLER_H
+#define XSONRPC_JSONFORMATHANDLER_H
 
 #include "formathandler.h"
 
-#include <map>
-
 namespace xsonrpc {
 
-class XmlFormatHandler : public FormatHandler
+class JsonFormatHandler : public FormatHandler
 {
 public:
-  explicit XmlFormatHandler(std::string requestPath = "/RPC2");
+  explicit JsonFormatHandler(std::string requestPath = "/RPC2");
 
   // FormatHandler
   bool CanHandleRequest(const std::string& path,

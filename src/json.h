@@ -1,5 +1,5 @@
 // This file is part of xsonrpc, an XML/JSON RPC library.
-// Copyright (C) 2015 Erik Johansson <erik@ejohansson.se>
+// Copyright (C) 2015 Erik Johansson <erik@ejohansson.se
 //
 // This library is free software; you can redistribute it and/or modify it
 // under the terms of the GNU Lesser General Public License as published by the
@@ -15,31 +15,26 @@
 // along with this library; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#ifndef XSONRPC_XMLFORMATHANDLER_H
-#define XSONRPC_XMLFORMATHANDLER_H
-
-#include "formathandler.h"
-
-#include <map>
+#ifndef XSONRPC_JSON_H
+#define XSONRPC_JSON_H
 
 namespace xsonrpc {
+namespace json {
 
-class XmlFormatHandler : public FormatHandler
-{
-public:
-  explicit XmlFormatHandler(std::string requestPath = "/RPC2");
+const char JSONRPC_NAME[] = "jsonrpc";
+const char JSONRPC_VERSION_2_0[] = "2.0";
 
-  // FormatHandler
-  bool CanHandleRequest(const std::string& path,
-                        const std::string& contentType) override;
-  std::string GetContentType() override;
-  std::unique_ptr<Reader> CreateReader(std::string data) override;
-  std::unique_ptr<Writer> CreateWriter() override;
+const char METHOD_NAME[] = "method";
+const char PARAMS_NAME[] = "params";
+const char ID_NAME[] = "id";
 
-private:
-  std::string myRequestPath;
-};
+const char RESULT_NAME[] = "result";
 
+const char ERROR_NAME[] = "error";
+const char ERROR_CODE_NAME[] = "code";
+const char ERROR_MESSAGE_NAME[] = "message";
+
+} // namespace json
 } // namespace xsonrpc
 
 #endif

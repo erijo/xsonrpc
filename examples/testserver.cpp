@@ -15,6 +15,7 @@
 // along with this library; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
+#include "xsonrpc/jsonformathandler.h"
 #include "xsonrpc/server.h"
 #include "xsonrpc/xmlformathandler.h"
 #include "xsonrpc/xmlrpcsystemmethods.h"
@@ -44,9 +45,9 @@ std::string Concat(const std::string& a, const std::string& b)
   return a + b;
 }
 
-xsonrpc::Value::Binary ToBinary(const std::string& s)
+xsonrpc::Value ToBinary(const std::string& s)
 {
-  return {s.begin(), s.end()};
+  return xsonrpc::Value(s, true);
 }
 
 std::string FromBinary(const xsonrpc::Value& b)
@@ -70,7 +71,9 @@ int main()
 
   xsonrpc::XmlRpcSystemMethods systemMethods(server.GetDispatcher(), true);
 
+  xsonrpc::JsonFormatHandler jsonFormatHandler;
   xsonrpc::XmlFormatHandler xmlFormatHandler;
+  server.RegisterFormatHandler(jsonFormatHandler);
   server.RegisterFormatHandler(xmlFormatHandler);
 
   auto& dispatcher = server.GetDispatcher();

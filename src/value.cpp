@@ -21,6 +21,7 @@
 #include "fault.h"
 #include "writer.h"
 
+#include <limits>
 #include <ostream>
 #include <string>
 
@@ -32,12 +33,6 @@ Value::Value(Array value)
   as.myArray = new Array(std::move(value));
 }
 
-Value::Value(Binary value)
-  : myType(Type::BINARY)
-{
-  as.myBinary = new Binary(std::move(value));
-}
-
 Value::Value(const DateTime& value)
   : myType(Type::DATE_TIME)
 {
@@ -45,8 +40,29 @@ Value::Value(const DateTime& value)
   as.myDateTime->tm_isdst = -1;
 }
 
-Value::Value(String value)
-  : myType(Type::STRING)
+Value::Value(int32_t value)
+  : myType(Type::INTEGER_32)
+{
+  as.myInteger32 = value;
+  as.myInteger64 = value;
+  as.myDouble = value;
+}
+
+Value::Value(int64_t value)
+  : myType(Type::INTEGER_64)
+{
+  as.myInteger32 = value;
+  as.myInteger64 = value;
+  as.myDouble = value;
+
+  static_assert(std::numeric_limits<int64_t>::lowest()
+                >= std::numeric_limits<double>::lowest(), "");
+  static_assert(std::numeric_limits<int64_t>::max()
+                <= std::numeric_limits<double>::max(), "");
+}
+
+Value::Value(String value, bool binary)
+  : myType(binary ? Type::BINARY : Type::STRING)
 {
   as.myString = new String(std::move(value));
 }
@@ -77,12 +93,10 @@ Value::Value(const Value& other)
     case Type::ARRAY:
       as.myArray = new Array(other.AsArray());
       break;
-    case Type::BINARY:
-      as.myBinary = new Binary(other.AsBinary());
-      break;
     case Type::DATE_TIME:
       as.myDateTime = new DateTime(other.AsDateTime());
       break;
+    case Type::BINARY:
     case Type::STRING:
       as.myString = new String(other.AsString());
       break;
@@ -120,14 +134,6 @@ const Value::Array& Value::AsArray() const
   throw InvalidParametersFault();
 }
 
-const Value::Binary& Value::AsBinary() const
-{
-  if (IsBinary()) {
-    return *as.myBinary;
-  }
-  throw InvalidParametersFault();
-}
-
 const bool& Value::AsBoolean() const
 {
   if (IsBoolean()) {
@@ -146,7 +152,7 @@ const Value::DateTime& Value::AsDateTime() const
 
 const double& Value::AsDouble() const
 {
-  if (IsDouble()) {
+  if (IsDouble() || IsInteger32() || IsInteger64()) {
     return as.myDouble;
   }
   throw InvalidParametersFault();
@@ -157,12 +163,16 @@ const int32_t& Value::AsInteger32() const
   if (IsInteger32()) {
     return as.myInteger32;
   }
+  else if (IsInteger64()
+           && static_cast<int64_t>(as.myInteger32) == as.myInteger64) {
+    return as.myInteger32;
+  }
   throw InvalidParametersFault();
 }
 
 const int64_t& Value::AsInteger64() const
 {
-  if (IsInteger64()) {
+  if (IsInteger32() || IsInteger64()) {
     return as.myInteger64;
   }
   throw InvalidParametersFault();
@@ -170,7 +180,7 @@ const int64_t& Value::AsInteger64() const
 
 const Value::String& Value::AsString() const
 {
-  if (IsString()) {
+  if (IsString() || IsBinary()) {
     return *as.myString;
   }
   throw InvalidParametersFault();
@@ -195,7 +205,7 @@ void Value::Write(Writer& writer) const
       writer.EndArray();
       break;
     case Type::BINARY:
-      writer.WriteBinary(as.myBinary->data(), as.myBinary->size());
+      writer.WriteBinary(as.myString->data(), as.myString->size());
       break;
     case Type::BOOLEAN:
       writer.Write(as.myBoolean);
@@ -236,12 +246,10 @@ void Value::Reset()
     case Type::ARRAY:
       delete as.myArray;
       break;
-    case Type::BINARY:
-      delete as.myBinary;
-      break;
     case Type::DATE_TIME:
       delete as.myDateTime;
       break;
+    case Type::BINARY:
     case Type::STRING:
       delete as.myString;
       break;

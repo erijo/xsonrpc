@@ -15,29 +15,31 @@
 // along with this library; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#ifndef XSONRPC_XMLFORMATHANDLER_H
-#define XSONRPC_XMLFORMATHANDLER_H
+#ifndef XSONRPC_JSONREADER_H
+#define XSONRPC_JSONREADER_H
 
-#include "formathandler.h"
+#include "reader.h"
 
-#include <map>
+#include <rapidjson/document.h>
+#include <string>
 
 namespace xsonrpc {
 
-class XmlFormatHandler : public FormatHandler
+class JsonReader final : public Reader
 {
 public:
-  explicit XmlFormatHandler(std::string requestPath = "/RPC2");
+  JsonReader(std::string data);
 
-  // FormatHandler
-  bool CanHandleRequest(const std::string& path,
-                        const std::string& contentType) override;
-  std::string GetContentType() override;
-  std::unique_ptr<Reader> CreateReader(std::string data) override;
-  std::unique_ptr<Writer> CreateWriter() override;
+  // Reader
+  Request GetRequest() override;
+  Response GetResponse() override;
+  Value GetValue() override;
 
 private:
-  std::string myRequestPath;
+  void ValidateJsonrpcVersion();
+  Value GetValue(const rapidjson::Value& value);
+  std::string myData;
+  rapidjson::Document myDocument;
 };
 
 } // namespace xsonrpc

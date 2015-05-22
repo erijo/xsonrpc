@@ -15,9 +15,13 @@
 // along with this library; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#include "fault.h"
 #include "response.h"
-#include "../src/xmlwriter.h"
+
+#include "fault.h"
+#include "jsonformathandler.h"
+#include "xmlformathandler.h"
+#include "../src/reader.h"
+#include "../src/writer.h"
 
 #include <catch.hpp>
 
@@ -25,11 +29,18 @@ using namespace xsonrpc;
 
 namespace {
 
+std::string ToJson(const Response& response)
+{
+  auto writer = JsonFormatHandler().CreateWriter();
+  response.Write(*writer);
+  return std::string(writer->GetData(), writer->GetSize());
+}
+
 std::string ToXml(const Response& response)
 {
-  XmlWriter writer;
-  response.Write(writer);
-  return std::string(writer.GetData(), writer.GetSize());
+  auto writer = XmlFormatHandler().CreateWriter();
+  response.Write(*writer);
+  return std::string(writer->GetData(), writer->GetSize());
 }
 
 } // namespace
@@ -41,6 +52,8 @@ TEST_CASE("bool response")
   CHECK_NOTHROW(response.ThrowIfFault());
   CHECK(response.GetResult().AsBoolean());
 
+  CHECK(ToJson(response) ==
+        R"({"jsonrpc":"2.0","id":0,"result":true})");
   CHECK(ToXml(response) ==
         "<?xml version=\"1.0\"?>"
         "<methodResponse>"
@@ -56,6 +69,8 @@ TEST_CASE("fault response")
   CHECK(response.IsFault());
   CHECK_THROWS_AS(response.ThrowIfFault(), Fault);
 
+  CHECK(ToJson(response) ==
+        R"({"jsonrpc":"2.0","id":0,"error":{"code":123,"message":"test"}})");
   CHECK(ToXml(response) ==
         "<?xml version=\"1.0\"?>"
         "<methodResponse>"

@@ -52,15 +52,17 @@ Request JsonReader::GetRequest()
 
   // TODO: get id
 
-  auto params = myDocument.FindMember(PARAMS_NAME);
-  if (params != myDocument.MemberEnd() && !params->value.IsArray()) {
-    throw InvalidRequestFault();
-  }
-
   Request::Parameters parameters;
-  for (auto param = params->value.Begin(); param != params->value.End();
-       ++param) {
-    parameters.emplace_back(GetValue(*param));
+  auto params = myDocument.FindMember(PARAMS_NAME);
+  if (params != myDocument.MemberEnd()) {
+    if (!params->value.IsArray()) {
+      throw InvalidRequestFault();
+    }
+
+    for (auto param = params->value.Begin(); param != params->value.End();
+         ++param) {
+      parameters.emplace_back(GetValue(*param));
+    }
   }
 
   return Request(method->value.GetString(), std::move(parameters));

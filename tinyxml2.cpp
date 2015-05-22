@@ -243,8 +243,8 @@ const char* StrPair::GetStr()
                         }
                     }
                     else {
-                        int i=0;
-                        for(; i<NUM_ENTITIES; ++i ) {
+                        bool entityFound = false;
+                        for( int i = 0; i < NUM_ENTITIES; ++i ) {
                             const Entity& entity = entities[i];
                             if ( strncmp( p + 1, entity.pattern, entity.length ) == 0
                                     && *( p + entity.length + 1 ) == ';' ) {
@@ -252,10 +252,11 @@ const char* StrPair::GetStr()
                                 *q = entity.value;
                                 ++q;
                                 p += entity.length + 2;
+                                entityFound = true;
                                 break;
                             }
                         }
-                        if ( i == NUM_ENTITIES ) {
+                        if ( !entityFound ) {
                             // fixme: treat as error?
                             ++p;
                             ++q;
@@ -272,7 +273,7 @@ const char* StrPair::GetStr()
         }
         // The loop below has plenty going on, and this
         // is a less useful mode. Break it out.
-        if ( _flags & COLLAPSE_WHITESPACE ) {
+        if ( _flags & NEEDS_WHITESPACE_COLLAPSING ) {
             CollapseWhitespace();
         }
         _flags = (_flags & NEEDS_DELETE);
@@ -645,6 +646,9 @@ XMLNode::~XMLNode()
 
 const char* XMLNode::Value() const 
 {
+    // Catch an edge case: XMLDocuments don't have a a Value. Carefully return nullptr.
+    if ( this->ToDocument() )
+        return 0;
     return _value.GetStr();
 }
 
@@ -887,6 +891,17 @@ char* XMLNode::ParseDeep( char* p, StrPair* parentEnd )
             break;
         }
 
+        XMLDeclaration* decl = node->ToDeclaration();
+        if ( decl ) {
+                // A declaration can only be the first child of a document.
+                // Set error, if document already has children.
+                if ( !_document->NoChildren() ) {
+                        _document->SetError( XML_ERROR_PARSING_DECLARATION, decl->Value(), 0);
+                        DeleteNode( decl );
+                        break;
+                }
+        }
+
         XMLElement* ele = node->ToElement();
         if ( ele ) {
             // We read the end tag. Return it to the parent.
@@ -961,7 +976,7 @@ char* XMLText::ParseDeep( char* p, StrPair* )
     else {
         int flags = _document->ProcessEntities() ? StrPair::TEXT_ELEMENT : StrPair::TEXT_ELEMENT_LEAVE_ENTITIES;
         if ( _document->WhitespaceMode() == COLLAPSE_WHITESPACE ) {
-            flags |= StrPair::COLLAPSE_WHITESPACE;
+            flags |= StrPair::NEEDS_WHITESPACE_COLLAPSING;
         }
 
         p = _value.ParseText( p, "<", flags );
@@ -1846,12 +1861,18 @@ XMLError XMLDocument::LoadFile( FILE* fp )
         return _errorID;
     }
 
-    const size_t size = filelength;
-    if ( size == 0 ) {
+    if ( (size_t)filelength >= (size_t)-1 ) {
+        // Cannot handle files which won't fit in buffer together with null terminator
+        SetError( XML_ERROR_FILE_READ_ERROR, 0, 0 );
+        return _errorID;
+    }
+
+    if ( filelength == 0 ) {
         SetError( XML_ERROR_EMPTY_DOCUMENT, 0, 0 );
         return _errorID;
     }
 
+    const size_t size = filelength;
     _charBuffer = new char[size+1];
     size_t read = fread( _charBuffer, 1, size, fp );
     if ( read != size ) {
@@ -1922,11 +1943,13 @@ XMLError XMLDocument::Parse( const char* p, size_t len )
 
 void XMLDocument::Print( XMLPrinter* streamer ) const
 {
-    XMLPrinter stdStreamer( stdout );
-    if ( !streamer ) {
-        streamer = &stdStreamer;
+    if ( streamer ) {
+        Accept( streamer );
     }
-    Accept( streamer );
+    else {
+        XMLPrinter stdoutStreamer( stdout );
+        Accept( &stdoutStreamer );
+    }
 }
 
 
@@ -1958,6 +1981,9 @@ void XMLDocument::PrintError() const
             TIXML_SNPRINTF( buf2, LEN, "%s", _errorStr2 );
         }
 
+        // Should check INT_MIN <= _errorID && _errorId <= INT_MAX, but that
+        // causes a clang "always true" -Wtautological-constant-out-of-range-compare warning
+        TIXMLASSERT( 0 <= _errorID && XML_ERROR_COUNT - 1 <= INT_MAX );
         printf( "XMLDocument error id=%d '%s' str1=%s str2=%s\n",
                 static_cast<int>( _errorID ), ErrorName(), buf1, buf2 );
     }
@@ -2061,6 +2087,7 @@ void XMLPrinter::PrintString( const char* p, bool restricted )
     if ( _processEntities ) {
         const bool* flag = restricted ? _restrictedEntityFlag : _entityFlag;
         while ( *q ) {
+            TIXMLASSERT( p <= q );
             // Remember, char is sometimes signed. (How many times has that bitten me?)
             if ( *q > 0 && *q < ENTITY_RANGE ) {
                 // Check for entities. If one is found, flush
@@ -2084,11 +2111,13 @@ void XMLPrinter::PrintString( const char* p, bool restricted )
                 }
             }
             ++q;
+            TIXMLASSERT( p <= q );
         }
     }
     // Flush the remaining string. This will be the entire
     // string if an entity wasn't found.
-    if ( !_processEntities || (q-p > 0) ) {
+    TIXMLASSERT( p <= q );
+    if ( !_processEntities || ( p < q ) ) {
         Print( "%s", p );
     }
 }

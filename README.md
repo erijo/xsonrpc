@@ -1,9 +1,15 @@
 [![Build Status](https://travis-ci.org/erijo/xsonrpc.svg?branch=master)](https://travis-ci.org/erijo/xsonrpc)
 
 # xsonrpc
-An XML/JSON RPC library for C++11.
 
-A simple server handling both [XML-RPC](http://xmlrpc.scripting.com/spec.html) and [JSON-RPC:](http://www.jsonrpc.org/specification)
+An [LGPL](http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html) licensed
+XML/JSON RPC library for C++11.
+
+
+## Examples
+
+A simple server handling both [XML-RPC](http://xmlrpc.scripting.com/spec.html)
+and [JSON-RPC:](http://www.jsonrpc.org/specification)
 
 ```C++
 std::string Concat(const std::string& a, const std::string& b)
@@ -65,4 +71,20 @@ int main(int argc, char** argv)
   client.Call("exit");
   return 0;
 }
+```
+
+## Build instructions
+
+To build xsonrpc you need:
+
+* A C++11 capable compiler (e.g. GCC 4.8 or newer)
+* [cmake](http://www.cmake.org/)
+* [libcurl](http://curl.haxx.se/libcurl/)
+* [libmicrohttpd](http://www.gnu.org/software/libmicrohttpd/)
+
+```Shell
+mkdir build
+cd build
+cmake path/to/xsonrpc
+make
 ```

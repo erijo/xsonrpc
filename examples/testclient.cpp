@@ -70,8 +70,6 @@ void LogCall(xsonrpc::Client& client, std::string method, T&&... args)
 
 int main(int argc, char** argv)
 {
-  xsonrpc::Client::GlobalInit();
-
   std::unique_ptr<xsonrpc::FormatHandler> formatHandler;
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], "json") == 0) {
@@ -86,6 +84,7 @@ int main(int argc, char** argv)
   }
 
   try {
+    xsonrpc::Client::GlobalInit();
     xsonrpc::Client client("localhost", 8080, *formatHandler);
 
     LogCall(client, "add", 3, 2);

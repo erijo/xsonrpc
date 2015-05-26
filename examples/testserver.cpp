@@ -20,6 +20,7 @@
 #include "xsonrpc/xmlformathandler.h"
 #include "xsonrpc/xmlrpcsystemmethods.h"
 
+#include <iostream>
 #include <numeric>
 #include <poll.h>
 #include <string>
@@ -64,7 +65,7 @@ xsonrpc::Value::Struct ToStruct(const xsonrpc::Value::Array& a)
   return s;
 }
 
-int main()
+void RunServer()
 {
   Math math;
   xsonrpc::Server server(8080);
@@ -100,6 +101,17 @@ int main()
 
   while (run && poll(&fd, 1, -1) == 1) {
     server.OnReadableFileDescriptor();
+  }
+}
+
+int main()
+{
+  try {
+    RunServer();
+  }
+  catch (const std::exception& ex) {
+    std::cerr << "Error: " << ex.what() << "\n";
+    return 1;
   }
 
   return 0;

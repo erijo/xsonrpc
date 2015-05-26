@@ -16,6 +16,7 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "xsonrpc/client.h"
+#include "xsonrpc/fault.h"
 #include "xsonrpc/jsonformathandler.h"
 #include "xsonrpc/xmlformathandler.h"
 
@@ -23,6 +24,49 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+
+void LogArguments() { }
+
+template<typename Head>
+void LogArguments(Head&& head)
+{
+  std::cout << head;
+}
+
+template<typename Head, typename... Tail>
+void LogArguments(Head&& head, Tail&&... tail)
+{
+  std::cout << head << ", ";
+  LogArguments(std::forward<Tail>(tail)...);
+}
+
+void LogArguments(xsonrpc::Request::Parameters& params)
+{
+  for (auto it = params.begin(); it != params.end(); ++it) {
+    if (it != params.begin()) {
+      std::cout << ", ";
+    }
+    std::cout << *it;
+  }
+}
+
+size_t CallErrors = 0;
+
+template<typename... T>
+void LogCall(xsonrpc::Client& client, std::string method, T&&... args)
+{
+  std::cout << method << '(';
+  LogArguments(std::forward<T>(args)...);
+  std::cout << "):\n>>> ";
+  try {
+    std::cout << client.Call(std::move(method), std::forward<T>(args)...);
+  }
+  catch (const xsonrpc::Fault& fault) {
+    ++CallErrors;
+    std::cout << "Error: " << fault.what();
+  }
+  std::cout << "\n\n";
+}
 
 int main(int argc, char** argv)
 {
@@ -40,83 +84,87 @@ int main(int argc, char** argv)
     std::cout << "Using XML format\n";
     formatHandler.reset(new xsonrpc::XmlFormatHandler());
   }
-  xsonrpc::Client client("localhost", 8080, *formatHandler);
 
-  std::cout << "add: 3+2=" << client.Call("add", 3, 2) << "\n";
-  std::cout << "concat: " << client.Call("concat", "Hello, ", "World!")
-            << "\n";
+  try {
+    xsonrpc::Client client("localhost", 8080, *formatHandler);
 
-  xsonrpc::Request::Parameters params;
-  {
-    xsonrpc::Value::Array a;
-    a.emplace_back(1000);
-    a.emplace_back(std::numeric_limits<int32_t>::max());
-    params.push_back(std::move(a));
-  }
-  std::cout << "add_array: " << client.Call("add_array", params) << "\n";
+    LogCall(client, "add", 3, 2);
+    LogCall(client, "concat", "Hello, ", "World!");
 
-  std::cout << "to_binary: " << client.Call("to_binary", "Hello World!")
-            << "\n";
-  std::cout << "from_binary: "
-            << client.Call("from_binary",
-                           xsonrpc::Value("Hi!", true))
-            << "\n";
-
-  params.clear();
-  {
-    xsonrpc::Value::Array a;
-    a.emplace_back(12);
-    a.emplace_back("foobar");
-    a.emplace_back(a);
-    params.push_back(std::move(a));
-  }
-  std::cout << "to_struct: " << client.Call("to_struct", params) << "\n";
-
-  params.clear();
-  {
-    xsonrpc::Value::Array calls;
+    xsonrpc::Request::Parameters params;
     {
-      xsonrpc::Value::Struct call;
-      call["methodName"] = "add";
+      xsonrpc::Value::Array a;
+      a.emplace_back(1000);
+      a.emplace_back(std::numeric_limits<int32_t>::max());
+      params.push_back(std::move(a));
+    }
+    LogCall(client, "add_array", params);
+
+    LogCall(client, "to_binary", "Hello World!");
+    LogCall(client, "from_binary", xsonrpc::Value("Hi!", true));
+
+    params.clear();
+    {
+      xsonrpc::Value::Array a;
+      a.emplace_back(12);
+      a.emplace_back("foobar");
+      a.emplace_back(a);
+      params.push_back(std::move(a));
+    }
+    LogCall(client, "to_struct", params);
+
+    params.clear();
+    {
+      xsonrpc::Value::Array calls;
       {
-        xsonrpc::Value::Array params;
-        params.emplace_back(23);
-        params.emplace_back(19);
-        call["params"] = std::move(params);
+        xsonrpc::Value::Struct call;
+        call["methodName"] = "add";
+        {
+          xsonrpc::Value::Array params;
+          params.emplace_back(23);
+          params.emplace_back(19);
+          call["params"] = std::move(params);
+        }
+        calls.emplace_back(std::move(call));
       }
-      calls.emplace_back(std::move(call));
-    }
-    {
-      xsonrpc::Value::Struct call;
-      call["methodName"] = "does.NotExist";
-      calls.emplace_back(std::move(call));
-    }
-    {
-      xsonrpc::Value::Struct call;
-      call["methodName"] = "concat";
       {
-        xsonrpc::Value::Array params;
-        params.emplace_back("Hello ");
-        params.emplace_back("multicall!");
-        call["params"] = std::move(params);
+        xsonrpc::Value::Struct call;
+        call["methodName"] = "does.NotExist";
+        calls.emplace_back(std::move(call));
       }
-      calls.emplace_back(std::move(call));
+      {
+        xsonrpc::Value::Struct call;
+        call["methodName"] = "concat";
+        {
+          xsonrpc::Value::Array params;
+          params.emplace_back("Hello ");
+          params.emplace_back("multicall!");
+          call["params"] = std::move(params);
+        }
+        calls.emplace_back(std::move(call));
+      }
+      params.emplace_back(std::move(calls));
     }
-    params.emplace_back(std::move(calls));
-  }
-  std::cout << "multicall: " << client.Call("system.multicall", params)
-            << "\n";
-  std::cout << "methods: " << client.Call("system.listMethods") << "\n";
-  std::cout << "help(add): " << client.Call("system.methodHelp", "add")
-            << "\n";
-  std::cout << "params(add): "
-            << client.Call("system.methodSignature", "add") << "\n";
+    LogCall(client, "system.multicall", params);
+    LogCall(client, "system.listMethods");
+    LogCall(client, "system.methodHelp", "add");
+    LogCall(client, "system.methodSignature", "add");
 
-  for (int i = 1; i < argc; ++i) {
-    if (strcmp(argv[i], "-e") == 0) {
-      std::cout << "exit: " << client.Call("exit") << "\n";
-      break;
+    for (int i = 1; i < argc; ++i) {
+      if (strcmp(argv[i], "-e") == 0) {
+        LogCall(client, "exit");
+        break;
+      }
     }
+  }
+  catch (const std::exception& ex) {
+    std::cerr << "Error: " << ex.what() << "\n";
+    return 1;
+  }
+
+  if (CallErrors > 0) {
+    std::cerr << "Error: " << CallErrors << " call(s) failed\n";
+    return 1;
   }
 
   return 0;

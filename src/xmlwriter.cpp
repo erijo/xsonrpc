@@ -45,7 +45,8 @@ void XmlWriter::EndDocument()
   // Empty
 }
 
-void XmlWriter::StartRequest(const std::string& methodName)
+void XmlWriter::StartRequest(const std::string& methodName,
+                             const Value& /*id*/)
 {
   myPrinter.OpenElement(METHOD_CALL_TAG, true);
 
@@ -72,7 +73,7 @@ void XmlWriter::EndParameter()
   myPrinter.CloseElement(true);
 }
 
-void XmlWriter::StartResponse()
+void XmlWriter::StartResponse(const Value& /*id*/)
 {
   myPrinter.OpenElement(METHOD_RESPONSE_TAG, true);
   myPrinter.OpenElement(PARAMS_TAG, true);
@@ -86,7 +87,7 @@ void XmlWriter::EndResponse()
   myPrinter.CloseElement(true);
 }
 
-void XmlWriter::StartFaultResponse()
+void XmlWriter::StartFaultResponse(const Value& /*id*/)
 {
   myPrinter.OpenElement(METHOD_RESPONSE_TAG, true);
   myPrinter.OpenElement(FAULT_TAG, true);

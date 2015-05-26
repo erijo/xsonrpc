@@ -51,7 +51,7 @@ Request XmlReader::GetRequest()
 
   auto params = root->FirstChildElement(PARAMS_TAG);
   if (!params) {
-    return Request(name->GetText(), {});
+    return Request(name->GetText(), {}, false);
   }
 
   Request::Parameters parameters;
@@ -59,7 +59,7 @@ Request XmlReader::GetRequest()
        param; param = param->NextSiblingElement(PARAM_TAG)) {
     parameters.emplace_back(GetValue(param->FirstChildElement()));
   }
-  return Request(name->GetText(), std::move(parameters));
+  return Request(name->GetText(), std::move(parameters), false);
 }
 
 Response XmlReader::GetResponse()
@@ -87,7 +87,7 @@ Response XmlReader::GetResponse()
 
   auto result = GetValue(value->FirstChildElement());
   if (!isFault) {
-    return Response(std::move(result));
+    return Response(std::move(result), false);
   }
 
   if (!result.IsStruct()) {
@@ -102,7 +102,8 @@ Response XmlReader::GetResponse()
   if (string == s.end() || !string->second.IsString()) {
     throw InvalidRequestFault("Missing or invalid response fault string");
   }
-  return Response(code->second.AsInteger32(), string->second.AsString());
+  return Response(code->second.AsInteger32(), string->second.AsString(),
+                  false);
 }
 
 Value XmlReader::GetValue()

@@ -20,23 +20,24 @@
 
 namespace xsonrpc {
 
-Request::Request(std::string methodName, Parameters parameters)
+Request::Request(std::string methodName, Parameters parameters, Value id)
   : myMethodName(std::move(methodName)),
-    myParameters(std::move(parameters))
+    myParameters(std::move(parameters)),
+    myId(std::move(id))
 {
   // Empty
 }
 
 void Request::Write(Writer& writer) const
 {
-  Write(myMethodName, myParameters, writer);
+  Write(myMethodName, myParameters, myId, writer);
 }
 
 void Request::Write(const std::string& methodName, const Parameters& params,
-                    Writer& writer)
+                    const Value& id, Writer& writer)
 {
   writer.StartDocument();
-  writer.StartRequest(methodName);
+  writer.StartRequest(methodName, id);
   for (auto& param : params) {
     writer.StartParameter();
     param.Write(writer);

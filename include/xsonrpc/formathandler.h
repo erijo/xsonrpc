@@ -34,6 +34,7 @@ public:
   virtual bool CanHandleRequest(const std::string& path,
                                 const std::string& contentType) = 0;
   virtual std::string GetContentType() = 0;
+  virtual bool UsesId() = 0;
   virtual std::unique_ptr<Reader> CreateReader(std::string data) = 0;
   virtual std::unique_ptr<Writer> CreateWriter() = 0;
 };

@@ -22,17 +22,19 @@
 
 namespace xsonrpc {
 
-Response::Response(Value value)
+Response::Response(Value value, Value id)
   : myResult(std::move(value)),
     myIsFault(false),
-    myFaultCode(0)
+    myFaultCode(0),
+    myId(std::move(id))
 {
 }
 
-Response::Response(int32_t faultCode, std::string faultString)
+Response::Response(int32_t faultCode, std::string faultString, Value id)
   : myIsFault(true),
     myFaultCode(faultCode),
-    myFaultString(std::move(faultString))
+    myFaultString(std::move(faultString)),
+    myId(std::move(id))
 {
 }
 
@@ -40,12 +42,12 @@ void Response::Write(Writer& writer) const
 {
   writer.StartDocument();
   if (myIsFault) {
-    writer.StartFaultResponse();
+    writer.StartFaultResponse(myId);
     writer.WriteFault(myFaultCode, myFaultString);
     writer.EndFaultResponse();
   }
   else {
-    writer.StartResponse();
+    writer.StartResponse(myId);
     myResult.Write(writer);
     writer.EndResponse();
   }

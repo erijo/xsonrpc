@@ -218,16 +218,17 @@ TEST_CASE("dispatcher")
   }
 
   {
-    auto response = dispatcher.Invoke("test", {true});
+    auto response = dispatcher.Invoke("test", {true}, 1);
     CAPTURE(response.GetResult());
     CHECK_FALSE(response.IsFault());
     CHECK(response.GetResult().AsBoolean());
+    CHECK(response.GetId().AsInteger32() == 1);
   }
 
   dispatcher.RemoveMethod("test");
 
   {
-    auto response = dispatcher.Invoke("test", {true});
+    auto response = dispatcher.Invoke("test", {true}, 1);
     CHECK(response.IsFault());
   }
 }
@@ -244,9 +245,10 @@ TEST_CASE("dispatcher returning void")
       value = a + b.AsInteger32();
     });
 
-  auto response = dispatcher.Invoke("test", {123, 321});
+  auto response = dispatcher.Invoke("test", {123, 321}, "42");
   CAPTURE(response.GetResult());
   CHECK_FALSE(response.IsFault());
   CHECK(response.GetResult().IsNil());
   CHECK(value == 444);
+  CHECK(response.GetId().AsString() == "42");
 }

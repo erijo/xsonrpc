@@ -113,11 +113,11 @@ void Server::HandleRequest(MHD_Connection* connection, void* connectionCls)
     reader.reset();
 
     auto response = myDispatcher.Invoke(
-      request.GetMethodName(), request.GetParameters());
+      request.GetMethodName(), request.GetParameters(), request.GetId());
     response.Write(*info->Writer);
   }
   catch (const Fault& ex) {
-    Response(ex.GetCode(), ex.GetString()).Write(*info->Writer);
+    Response(ex.GetCode(), ex.GetString(), Value()).Write(*info->Writer);
   }
 
 #if MHD_VERSION >= 0x00090500

@@ -183,7 +183,8 @@ public:
   void RemoveMethod(const std::string& name);
 
   Response Invoke(const std::string& name,
-                  const Request::Parameters& parameters) const;
+                  const Request::Parameters& parameters,
+                  const Value& id) const;
 
 private:
   template<typename ReturnType, typename... ParameterTypes>

@@ -24,6 +24,8 @@ struct tm;
 
 namespace xsonrpc {
 
+class Value;
+
 class Writer
 {
 public:
@@ -38,15 +40,16 @@ public:
   virtual void EndDocument() = 0;
 
   // Request
-  virtual void StartRequest(const std::string& methodName) = 0;
+  virtual void StartRequest(const std::string& methodName,
+                            const Value& id) = 0;
   virtual void EndRequest() = 0;
   virtual void StartParameter() = 0;
   virtual void EndParameter() = 0;
 
   // Response
-  virtual void StartResponse() = 0;
+  virtual void StartResponse(const Value& id) = 0;
   virtual void EndResponse() = 0;
-  virtual void StartFaultResponse() = 0;
+  virtual void StartFaultResponse(const Value& id) = 0;
   virtual void EndFaultResponse() = 0;
   virtual void WriteFault(int32_t code, const std::string& string) = 0;
 

@@ -36,8 +36,10 @@ public:
   Value GetValue() override;
 
 private:
-  void ValidateJsonrpcVersion();
-  Value GetValue(const rapidjson::Value& value);
+  void ValidateJsonrpcVersion() const;
+  Value GetValue(const rapidjson::Value& value) const;
+  Value GetId(const rapidjson::Value& id) const;
+
   std::string myData;
   rapidjson::Document myDocument;
 };

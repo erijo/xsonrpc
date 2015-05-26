@@ -32,13 +32,13 @@ public:
   size_t GetSize() override;
   void StartDocument() override;
   void EndDocument() override;
-  void StartRequest(const std::string& methodName) override;
+  void StartRequest(const std::string& methodName, const Value& id) override;
   void EndRequest() override;
   void StartParameter() override;
   void EndParameter() override;
-  void StartResponse() override;
+  void StartResponse(const Value& id) override;
   void EndResponse() override;
-  void StartFaultResponse() override;
+  void StartFaultResponse(const Value& id) override;
   void EndFaultResponse() override;
   void WriteFault(int32_t code, const std::string& string) override;
   void StartArray() override;

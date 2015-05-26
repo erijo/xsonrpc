@@ -79,6 +79,7 @@ private:
                      const Request::Parameters& params);
   FormatHandler& myFormatHandler;
   void* myHandle;
+  int32_t myId;
 };
 
 } // namespace xsonrpc

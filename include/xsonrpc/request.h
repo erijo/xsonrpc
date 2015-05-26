@@ -32,18 +32,20 @@ class Request
 public:
   typedef std::deque<Value> Parameters;
 
-  Request(std::string methodName, Parameters parameters);
+  Request(std::string methodName, Parameters parameters, Value id);
 
   const std::string& GetMethodName() const { return myMethodName; }
   const Parameters& GetParameters() const { return myParameters; }
+  const Value& GetId() const { return myId; }
 
   void Write(Writer& writer) const;
   static void Write(const std::string& methodName, const Parameters& params,
-                    Writer& writer);
+                    const Value& id, Writer& writer);
 
 private:
   std::string myMethodName;
   Parameters myParameters;
+  Value myId;
 };
 
 } // namespace xsonrpc

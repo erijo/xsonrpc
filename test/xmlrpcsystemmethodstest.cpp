@@ -86,7 +86,7 @@ TEST_CASE("multicall")
   Request::Parameters parameters;
   parameters.push_back(std::move(args));
 
-  auto response = dispatcher.Invoke("system.multicall", parameters);
+  auto response = dispatcher.Invoke("system.multicall", parameters, Value());
   CAPTURE(response.GetResult());
   REQUIRE_FALSE(response.IsFault());
 
@@ -177,7 +177,7 @@ TEST_CASE("multicall spec example")
   Request::Parameters parameters;
   parameters.push_back(std::move(args));
 
-  auto response = dispatcher.Invoke("system.multicall", parameters);
+  auto response = dispatcher.Invoke("system.multicall", parameters, Value());
   CAPTURE(response.GetResult());
   REQUIRE_FALSE(response.IsFault());
 

@@ -128,6 +128,7 @@ void XmlRpcSystemMethods::RemoveCapability(const std::string& name)
 Value XmlRpcSystemMethods::SystemMulticall(
   const Request::Parameters& parameters) const
 {
+  const Value dummyId;
   Value::Array result;
   for (auto& call : parameters.at(0).AsArray()) {
     try {
@@ -138,7 +139,7 @@ Value XmlRpcSystemMethods::SystemMulticall(
       auto& array = call[xml::PARAMS_TAG].AsArray();
       Request::Parameters callParams(array.begin(), array.end());
       auto retval = myDispather.Invoke(
-        call[xml::METHOD_NAME_TAG].AsString(), callParams);
+        call[xml::METHOD_NAME_TAG].AsString(), callParams, dummyId);
 
       retval.ThrowIfFault();
       Value::Array a;

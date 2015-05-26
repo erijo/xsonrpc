@@ -50,8 +50,6 @@ Request JsonReader::GetRequest()
     throw InvalidRequestFault();
   }
 
-  // TODO: get id
-
   Request::Parameters parameters;
   auto params = myDocument.FindMember(PARAMS_NAME);
   if (params != myDocument.MemberEnd()) {
@@ -65,7 +63,14 @@ Request JsonReader::GetRequest()
     }
   }
 
-  return Request(method->value.GetString(), std::move(parameters));
+  auto id = myDocument.FindMember(ID_NAME);
+  if (id == myDocument.MemberEnd()) {
+    // Notification
+    return Request(method->value.GetString(), std::move(parameters), false);
+  }
+
+  return Request(method->value.GetString(), std::move(parameters),
+                 GetId(id->value));
 }
 
 Response JsonReader::GetResponse()
@@ -76,7 +81,10 @@ Response JsonReader::GetResponse()
 
   ValidateJsonrpcVersion();
 
-  // TODO: get id
+  auto id = myDocument.FindMember(ID_NAME);
+  if (id == myDocument.MemberEnd()) {
+    throw InvalidRequestFault();
+  }
 
   auto result = myDocument.FindMember(RESULT_NAME);
   auto error = myDocument.FindMember(ERROR_NAME);
@@ -85,7 +93,7 @@ Response JsonReader::GetResponse()
     if (error != myDocument.MemberEnd()) {
       throw InvalidRequestFault();
     }
-    return Response(GetValue(result->value));
+    return Response(GetValue(result->value), GetId(id->value));
   }
   else if (error != myDocument.MemberEnd()) {
     if (result != myDocument.MemberEnd()) {
@@ -103,7 +111,8 @@ Response JsonReader::GetResponse()
       throw InvalidRequestFault();
     }
 
-    return Response(code->value.GetInt(), message->value.GetString());
+    return Response(code->value.GetInt(), message->value.GetString(),
+                    GetId(id->value));
   }
   else {
     throw InvalidRequestFault();
@@ -115,7 +124,7 @@ Value JsonReader::GetValue()
   return GetValue(myDocument);
 }
 
-void JsonReader::ValidateJsonrpcVersion()
+void JsonReader::ValidateJsonrpcVersion() const
 {
   auto jsonrpc = myDocument.FindMember(JSONRPC_NAME);
   if (jsonrpc == myDocument.MemberEnd()
@@ -125,7 +134,7 @@ void JsonReader::ValidateJsonrpcVersion()
   }
 }
 
-Value JsonReader::GetValue(const rapidjson::Value& value)
+Value JsonReader::GetValue(const rapidjson::Value& value) const
 {
   switch (value.GetType()) {
     case rapidjson::kNullType:
@@ -180,6 +189,24 @@ Value JsonReader::GetValue(const rapidjson::Value& value)
   }
 
   throw InternalErrorFault();
+}
+
+Value JsonReader::GetId(const rapidjson::Value& id) const
+{
+  if (id.IsString()) {
+    return id.GetString();
+  }
+  else if (id.IsInt()) {
+    return id.GetInt();
+  }
+  else if (id.IsInt64()) {
+    return id.GetInt64();
+  }
+  else if (id.IsNull()) {
+    return {};
+  }
+
+  throw InvalidRequestFault();
 }
 
 } // namespace xsonrpc

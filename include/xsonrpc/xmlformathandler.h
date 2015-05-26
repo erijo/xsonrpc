@@ -33,6 +33,7 @@ public:
   bool CanHandleRequest(const std::string& path,
                         const std::string& contentType) override;
   std::string GetContentType() override;
+  bool UsesId() override;
   std::unique_ptr<Reader> CreateReader(std::string data) override;
   std::unique_ptr<Writer> CreateWriter() override;
 

@@ -19,6 +19,7 @@
 
 #include "json.h"
 #include "util.h"
+#include "value.h"
 
 namespace xsonrpc {
 
@@ -49,7 +50,7 @@ void JsonWriter::EndDocument()
   // Empty
 }
 
-void JsonWriter::StartRequest(const std::string& methodName)
+void JsonWriter::StartRequest(const std::string& methodName, const Value& id)
 {
   myWriter.StartObject();
 
@@ -59,8 +60,7 @@ void JsonWriter::StartRequest(const std::string& methodName)
   myWriter.Key(METHOD_NAME, sizeof(METHOD_NAME) - 1);
   myWriter.String(methodName.data(), methodName.size(), true);
 
-  myWriter.Key(ID_NAME, sizeof(ID_NAME) - 1);
-  myWriter.Int(0); // TODO: fix this
+  WriteId(id);
 
   myWriter.Key(PARAMS_NAME, sizeof(PARAMS_NAME) - 1);
   myWriter.StartArray();
@@ -82,15 +82,14 @@ void JsonWriter::EndParameter()
   // Empty
 }
 
-void JsonWriter::StartResponse()
+void JsonWriter::StartResponse(const Value& id)
 {
   myWriter.StartObject();
 
   myWriter.Key(JSONRPC_NAME, sizeof(JSONRPC_NAME) - 1);
   myWriter.String(JSONRPC_VERSION_2_0, sizeof(JSONRPC_VERSION_2_0) - 1);
 
-  myWriter.Key(ID_NAME, sizeof(ID_NAME) - 1);
-  myWriter.Int(0); // TODO: fix this
+  WriteId(id);
 
   myWriter.Key(RESULT_NAME, sizeof(RESULT_NAME) - 1);
 }
@@ -100,15 +99,14 @@ void JsonWriter::EndResponse()
   myWriter.EndObject();
 }
 
-void JsonWriter::StartFaultResponse()
+void JsonWriter::StartFaultResponse(const Value& id)
 {
   myWriter.StartObject();
 
   myWriter.Key(JSONRPC_NAME, sizeof(JSONRPC_NAME) - 1);
   myWriter.String(JSONRPC_VERSION_2_0, sizeof(JSONRPC_VERSION_2_0) - 1);
 
-  myWriter.Key(ID_NAME, sizeof(ID_NAME) - 1);
-  myWriter.Int(0); // TODO: fix this
+  WriteId(id);
 }
 
 void JsonWriter::EndFaultResponse()
@@ -198,6 +196,25 @@ void JsonWriter::Write(const std::string& value)
 void JsonWriter::Write(const tm& value)
 {
   Write(util::FormatIso8601DateTime(value));
+}
+
+void JsonWriter::WriteId(const Value& id)
+{
+  if (id.IsString() || id.IsInteger32() || id.IsInteger64() || id.IsNil()) {
+    myWriter.Key(ID_NAME, sizeof(ID_NAME) - 1);
+    if (id.IsString()) {
+      myWriter.String(id.AsString().data(), id.AsString().size(), true);
+    }
+    else if (id.IsInteger32()) {
+      myWriter.Int(id.AsInteger32());
+    }
+    else if (id.IsInteger64()) {
+      myWriter.Int64(id.AsInteger64());
+    }
+    else {
+      myWriter.Null();
+    }
+  }
 }
 
 } // namespace xsonrpc

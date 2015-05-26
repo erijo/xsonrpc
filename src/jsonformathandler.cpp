@@ -44,6 +44,11 @@ std::string JsonFormatHandler::GetContentType()
   return APPLICATION_JSON;
 }
 
+bool JsonFormatHandler::UsesId()
+{
+  return true;
+}
+
 std::unique_ptr<Reader> JsonFormatHandler::CreateReader(std::string data)
 {
   return std::unique_ptr<Reader>(new JsonReader(std::move(data)));

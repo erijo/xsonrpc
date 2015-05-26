@@ -47,13 +47,13 @@ std::string ToXml(const Response& response)
 
 TEST_CASE("bool response")
 {
-  Response response(Value(true));
+  Response response(Value(true), 13);
   CHECK_FALSE(response.IsFault());
   CHECK_NOTHROW(response.ThrowIfFault());
   CHECK(response.GetResult().AsBoolean());
 
   CHECK(ToJson(response) ==
-        R"({"jsonrpc":"2.0","id":0,"result":true})");
+        R"({"jsonrpc":"2.0","id":13,"result":true})");
   CHECK(ToXml(response) ==
         "<?xml version=\"1.0\"?>"
         "<methodResponse>"
@@ -65,12 +65,12 @@ TEST_CASE("bool response")
 
 TEST_CASE("fault response")
 {
-  Response response(123, "test");
+  Response response(123, "test", "1");
   CHECK(response.IsFault());
   CHECK_THROWS_AS(response.ThrowIfFault(), Fault);
 
   CHECK(ToJson(response) ==
-        R"({"jsonrpc":"2.0","id":0,"error":{"code":123,"message":"test"}})");
+        R"({"jsonrpc":"2.0","id":"1","error":{"code":123,"message":"test"}})");
   CHECK(ToXml(response) ==
         "<?xml version=\"1.0\"?>"
         "<methodResponse>"

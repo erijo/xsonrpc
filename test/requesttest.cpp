@@ -104,7 +104,7 @@ TEST_CASE("only method name")
   CHECK(request->GetMethodName() == "test");
   CHECK(request->GetParameters().empty());
   CHECK(ToJson(*request) ==
-        R"({"jsonrpc":"2.0","method":"test","id":0,"params":[]})");
+        R"({"jsonrpc":"2.0","method":"test","params":[]})");
   CHECK(ToXml(*request) ==
         "<?xml version=\"1.0\"?>"
         "<methodCall>"
@@ -135,7 +135,7 @@ TEST_CASE("one parameter")
   REQUIRE_FALSE(request->GetParameters().empty());
   CHECK(request->GetParameters()[0].IsInteger32());
   CHECK(ToJson(*request) ==
-        R"({"jsonrpc":"2.0","method":"test","id":0,"params":[47]})");
+        R"({"jsonrpc":"2.0","method":"test","params":[47]})");
   CHECK(ToXml(*request) ==
         "<?xml version=\"1.0\"?>"
         "<methodCall>"
@@ -172,7 +172,7 @@ TEST_CASE("three parameters")
   CHECK(request->GetParameters()[1].AsInteger32() == 46);
   CHECK(request->GetParameters()[2].AsInteger32() == 45);
   CHECK(ToJson(*request) ==
-        R"({"jsonrpc":"2.0","method":"test","id":0,"params":[47,46,45]})");
+        R"({"jsonrpc":"2.0","method":"test","params":[47,46,45]})");
   CHECK(ToXml(*request) ==
         "<?xml version=\"1.0\"?>"
         "<methodCall>"

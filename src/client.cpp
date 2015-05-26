@@ -52,7 +52,8 @@ Client::Client(const std::string& host, unsigned short port,
                FormatHandler& formatHandler,
                const std::string& uri)
   : myFormatHandler(formatHandler),
-    myHandle(curl_easy_init())
+    myHandle(curl_easy_init()),
+    myId(0)
 {
   if (!myHandle) {
     throw std::runtime_error("client: failed to initialize cURL handle");
@@ -76,7 +77,8 @@ Value Client::CallInternal(const std::string& methodName,
                            const Request::Parameters& params)
 {
   auto writer = myFormatHandler.CreateWriter();
-  Request::Write(methodName, params, *writer);
+  const auto id = myId++;
+  Request::Write(methodName, params, id, *writer);
 
   curl_easy_setopt(myHandle, CURLOPT_POSTFIELDSIZE_LARGE,
                    static_cast<curl_off_t>(writer->GetSize()));
@@ -104,6 +106,11 @@ Value Client::CallInternal(const std::string& methodName,
 
   auto reader = myFormatHandler.CreateReader(std::move(buffer));
   Response response = reader->GetResponse();
+  if (myFormatHandler.UsesId()
+      && (!response.GetId().IsInteger32()
+          || response.GetId().AsInteger32() != id)) {
+    throw InvalidRequestFault();
+  }
   response.ThrowIfFault();
   return std::move(response.GetResult());
 }

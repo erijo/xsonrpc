@@ -44,6 +44,11 @@ std::string XmlFormatHandler::GetContentType()
   return TEXT_XML;
 }
 
+bool XmlFormatHandler::UsesId()
+{
+  return false;
+}
+
 std::unique_ptr<Reader> XmlFormatHandler::CreateReader(std::string data)
 {
   return std::unique_ptr<Reader>(new XmlReader(data.data(), data.size()));

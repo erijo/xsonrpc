@@ -24,7 +24,8 @@ namespace xsonrpc {
 
 Response::Response(Value value)
   : myResult(std::move(value)),
-    myIsFault(false)
+    myIsFault(false),
+    myFaultCode(0)
 {
 }
 

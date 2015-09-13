@@ -54,7 +54,7 @@ namespace xsonrpc {
 
 XmlRpcSystemMethods::XmlRpcSystemMethods(
   Dispatcher& dispatcher, bool introspection)
-  : myDispather(dispatcher)
+  : myDispatcher(dispatcher)
 {
   AddCapability(CAPABILITY_XMLRPC,
                 CAPABILITY_XMLRPC_URL,
@@ -64,30 +64,30 @@ XmlRpcSystemMethods::XmlRpcSystemMethods(
                 CAPABILITY_FAULTS_INTEROP_URL,
                 CAPABILITY_FAULTS_INTEROP_VERSION);
 
-  myDispather.AddMethod(
+  myDispatcher.AddMethod(
     SYSTEM_MULTICALL, &XmlRpcSystemMethods::SystemMulticall, *this)
     .SetHelpText("Call multiple methods at once")
     .AddSignature(Value::Type::ARRAY, Value::Type::ARRAY);
 
-  myDispather.AddMethod(
+  myDispatcher.AddMethod(
     SYSTEM_GETCAPABILITIES, &XmlRpcSystemMethods::SystemGetCapabilities, *this)
     .SetHelpText("Get server capabilities")
     .AddSignature(Value::Type::STRUCT);
 
   if (introspection) {
-    myDispather.AddMethod(
+    myDispatcher.AddMethod(
       SYSTEM_LISTMETHODS, &XmlRpcSystemMethods::SystemListMethods, *this)
       .SetHelpText("Returns a list of the methods the server has")
       .AddSignature(Value::Type::ARRAY);
 
-    myDispather.AddMethod(
+    myDispatcher.AddMethod(
       SYSTEM_METHODSIGNATURE, &XmlRpcSystemMethods::SystemMethodSignature,
       *this)
       .SetHelpText("Returns a description of the argument format a particular"
                    " method expects")
       .AddSignature(Value::Type::ARRAY, Value::Type::STRING);
 
-    myDispather.AddMethod(
+    myDispatcher.AddMethod(
       SYSTEM_METHODHELP, &XmlRpcSystemMethods::SystemMethodHelp, *this)
       .SetHelpText("Returns a text description of a particular method")
       .AddSignature(Value::Type::STRING, Value::Type::STRING);
@@ -101,13 +101,13 @@ XmlRpcSystemMethods::XmlRpcSystemMethods(
 XmlRpcSystemMethods::~XmlRpcSystemMethods()
 {
   if (myCapabilities.find(CAPABILITY_INTROSPECT) != myCapabilities.end()) {
-    myDispather.RemoveMethod(SYSTEM_METHODHELP);
-    myDispather.RemoveMethod(SYSTEM_METHODSIGNATURE);
-    myDispather.RemoveMethod(SYSTEM_LISTMETHODS);
+    myDispatcher.RemoveMethod(SYSTEM_METHODHELP);
+    myDispatcher.RemoveMethod(SYSTEM_METHODSIGNATURE);
+    myDispatcher.RemoveMethod(SYSTEM_LISTMETHODS);
   }
 
-  myDispather.RemoveMethod(SYSTEM_GETCAPABILITIES);
-  myDispather.RemoveMethod(SYSTEM_MULTICALL);
+  myDispatcher.RemoveMethod(SYSTEM_GETCAPABILITIES);
+  myDispatcher.RemoveMethod(SYSTEM_MULTICALL);
 }
 
 void XmlRpcSystemMethods::AddCapability(
@@ -138,7 +138,7 @@ Value XmlRpcSystemMethods::SystemMulticall(
 
       auto& array = call[xml::PARAMS_TAG].AsArray();
       Request::Parameters callParams(array.begin(), array.end());
-      auto retval = myDispather.Invoke(
+      auto retval = myDispatcher.Invoke(
         call[xml::METHOD_NAME_TAG].AsString(), callParams, dummyId);
 
       retval.ThrowIfFault();
@@ -170,14 +170,14 @@ Value XmlRpcSystemMethods::SystemMulticall(
 
 Value XmlRpcSystemMethods::SystemListMethods() const
 {
-  return myDispather.GetMethodNames();
+  return myDispatcher.GetMethodNames();
 }
 
 Value XmlRpcSystemMethods::SystemMethodSignature(
   const std::string& methodName) const
 {
   try {
-    auto& method = myDispather.GetMethod(methodName);
+    auto& method = myDispatcher.GetMethod(methodName);
     if (!method.IsHidden()) {
       auto& signatures = method.GetSignatures();
       if (signatures.empty()) {
@@ -244,7 +244,7 @@ std::string XmlRpcSystemMethods::SystemMethodHelp(
   const std::string& methodName) const
 {
   try {
-    auto& method = myDispather.GetMethod(methodName);
+    auto& method = myDispatcher.GetMethod(methodName);
     if (!method.IsHidden()) {
       return method.GetHelpText();
     }

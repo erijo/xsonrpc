@@ -30,7 +30,7 @@ class Dispatcher;
 class XmlRpcSystemMethods
 {
 public:
-  XmlRpcSystemMethods(Dispatcher& dispather, bool introspection);
+  XmlRpcSystemMethods(Dispatcher& dispatcher, bool introspection);
   ~XmlRpcSystemMethods();
 
   void AddCapability(std::string name, std::string url, int32_t version);
@@ -43,7 +43,7 @@ private:
   std::string SystemMethodHelp(const std::string& methodName) const;
   Value SystemGetCapabilities() const;
 
-  Dispatcher& myDispather;
+  Dispatcher& myDispatcher;
 
   struct Capability
   {

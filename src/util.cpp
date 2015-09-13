@@ -21,6 +21,8 @@
 #include <cstring>
 #include <ctime>
 #include <tinyxml2.h>
+#include <sstream>
+#include <iomanip>
 
 namespace {
 
@@ -93,8 +95,10 @@ bool ParseIso8601DateTime(const char* text, tm& dt)
     return false;
   }
   memset(&dt, 0, sizeof(dt));
-  auto* res = strptime(text, DATE_TIME_FORMAT, &dt);
-  if (!res || *res != '\0') {
+  std::istringstream ss(text);
+  ss >> std::get_time(&dt, DATE_TIME_FORMAT);
+
+  if (ss.fail()) {
     return false;
   }
   dt.tm_isdst = -1;

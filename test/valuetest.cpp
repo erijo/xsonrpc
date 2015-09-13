@@ -329,8 +329,6 @@ TEST_CASE("date time")
   CHECK(dt.tm_hour == 12);
   CHECK(dt.tm_min == 13);
   CHECK(dt.tm_sec == 14);
-  CHECK(dt.tm_wday == 3);
-  CHECK(dt.tm_yday == 90);
   CHECK(dt.tm_isdst == -1);
 
   CHECK(ToJson(*value) == "\"20150401T12:13:14\"");

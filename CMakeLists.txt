@@ -11,6 +11,7 @@ option(BUILD_EXAMPLES "Build xsonrpc examples" ON)
 option(BUILD_TESTS "Build xsonrpc unit tests" ON)
 
 include(CheckCXXCompilerFlag)
+include(CheckFunctionExists)
 include(FindPackageMessage)
 
 # TinyXML-2
@@ -61,6 +62,11 @@ elseif (COMPILER_SUPPORTS_CXX11)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 else()
   message(SEND_ERROR "Compiler does not support C++11")
+endif()
+
+check_function_exists(strptime HAVE_STRPTIME)
+if (HAVE_STRPTIME)
+  add_definitions(-DHAVE_STRPTIME)
 endif()
 
 # integer_sequence for c++11 compiler

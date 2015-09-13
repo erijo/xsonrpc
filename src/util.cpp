@@ -22,6 +22,11 @@
 #include <ctime>
 #include <tinyxml2.h>
 
+#ifndef HAVE_STRPTIME
+#include <iomanip>
+#include <sstream>
+#endif
+
 namespace {
 
 const char DATE_TIME_FORMAT[] = "%Y%m%dT%T";
@@ -93,10 +98,17 @@ bool ParseIso8601DateTime(const char* text, tm& dt)
     return false;
   }
   memset(&dt, 0, sizeof(dt));
+#ifdef HAVE_STRPTIME
   auto* res = strptime(text, DATE_TIME_FORMAT, &dt);
   if (!res || *res != '\0') {
     return false;
   }
+#else
+  std::istringstream ss(text);
+  if (!(ss >> std::get_time(&dt, DATE_TIME_FORMAT))) {
+    return false;
+  }
+#endif
   dt.tm_isdst = -1;
   return true;
 }
